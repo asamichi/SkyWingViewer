@@ -8,9 +8,9 @@ namespace SkyWingViewer.ViewModels;
 public class AssetListViewModelFactory
 {
     //asset の形式に応じた VM を返却
-    public static object Create(AssetBase asset)
+    public static AssetViewModelBase? Create(AssetBase asset)
     {
-        //WhenAddType: 他王形式が増えたらここに追加
+        //WhenAddType: 対応形式が増えたらここに追加
         //asset の型で分岐
         switch (asset)
         {
@@ -19,6 +19,7 @@ public class AssetListViewModelFactory
                 return new ImageAssetViewModel(image);
 
             default:
+                //TODO: 仮実装なので後程検討すること。
                 return null;
         }
     }

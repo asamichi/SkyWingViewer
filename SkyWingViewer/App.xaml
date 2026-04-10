@@ -9,6 +9,10 @@
         <DataTemplate DataType="{x:Type vm:AssetListViewModel}">
             <views:AssetListView/>
         </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:TargetPathBarViewModel}">
+            <views:TargetPathBarView/>
+        </DataTemplate>
         
     </Application.Resources>
 </Application>

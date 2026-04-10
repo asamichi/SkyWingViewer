@@ -7,7 +7,7 @@ using System.IO;
 namespace SkyWingViewer.Models;
 
 
-public class AssetFactory
+public static class AssetFactory
 {
     //対応する拡張子かの判定処理と、自身のインスタンスを作成するメソッド
     //メモ：リストの中身はタプルという機能を使用

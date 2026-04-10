@@ -7,5 +7,22 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <!-- コンテンツコントロールで受け取ったVMをそのまま表示する-->
-    <ContentControl Content="{Binding}"/>
+    <!--<ContentControl Content="{Binding}"/>-->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="00"/>
+            <ColumnDefinition Width="4*"/>
+            <ColumnDefinition Width="0"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
+        <ContentControl x:Name="ToolBar" Content="{Binding}"  Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"/>
+        <Button Content="Tree Menu" Grid.Row="1" Grid.Column="0"/>
+        <ContentControl x:Name="MainArea" Content="{Binding}" Grid.Row="1" Grid.Column="1" />
+        <Button Content="Sub Area" Grid.Row="1" Grid.Column="2"/>
+        <Button Content="Footer" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"/>
+    </Grid>
 </Window>

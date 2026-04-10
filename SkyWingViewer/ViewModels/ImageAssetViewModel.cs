@@ -7,9 +7,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace SkyWingViewer.ViewModels;
 
-class ImageAssetViewModel : AssetViewModelBase
+public class ImageAssetViewModel : AssetViewModelBase
 {
     public ImageAssetViewModel(ImageAsset imageAsset) : base(imageAsset)
     {
     }
 }
+

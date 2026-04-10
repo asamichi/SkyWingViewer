@@ -14,7 +14,7 @@ public class JsonStorage<TKey, TValue> where TKey : notnull
 {
     private readonly string _filePath;
     //デフォルトの json を指定する場合使用
-    private readonly string _defaultJSONString = null;
+    private readonly string _defaultJSONString = "{}";
     //デフォルトのディクショナリを指定する場合に使用
     private readonly Dictionary<TKey, TValue>? _defaultDictionary = null;
     //保存時のオプション
@@ -62,7 +62,7 @@ public class JsonStorage<TKey, TValue> where TKey : notnull
         {
             //ファイルが壊れている場合等、一旦仮。
             return LoadDefault();
-            //TODO: JSON が読み込めなかった場合、現存する該当ファイルを日付などつけつつ別のところにコピーする。読み込んだ後保存した際に、壊れているファイルが失われないようにするため（壊れていても一部サルベージできるかもしれないので、残す価値がある） 
+            //WILL: JSON が読み込めなかった場合、現存する該当ファイルを日付などつけつつ別のところにコピーする。読み込んだ後保存した際に、壊れているファイルが失われないようにするため（壊れていても一部サルベージできるかもしれないので、残す価値がある） 
         }
     }
 
