@@ -1,0 +1,14 @@
+﻿<Application x:Class="SkyWingViewer.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:SkyWingViewer"
+             xmlns:vm="clr-namespace:SkyWingViewer.ViewModels"
+             xmlns:views="clr-namespace:SkyWingViewer.Views">
+    <Application.Resources>
+
+        <DataTemplate DataType="{x:Type vm:AssetListViewModel}">
+            <views:AssetListView/>
+        </DataTemplate>
+        
+    </Application.Resources>
+</Application>
