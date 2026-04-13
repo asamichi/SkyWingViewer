@@ -12,12 +12,25 @@
     <UserControl.Resources>
         <!--WhenAddType: 対応形式が増えたらここに追加。対応する VM も追加-->
         <DataTemplate DataType="{x:Type vm:ImageAssetViewModel}">
-            <Image Source="{Binding AssetPath, IsAsync=True}"/>
+            <!--<Image Source="{Binding AssetPath, IsAsync=True}"/>-->
+            <local:ImageAssetView/>
         </DataTemplate>
     </UserControl.Resources>
 
+    <!--暫定で、とりあえず2ページ分くらい先読みしておく(CacheXXX の設定)-->
     <ListView
-        ItemsSource="{Binding Assets, Mode=OneWay}">
+        ItemsSource="{Binding Assets, Mode=OneWay}"
+        VirtualizingPanel.CacheLength="2"
+        VirtualizingPanel.CacheLengthUnit="Page">
+        <ListView.ItemContainerStyle>
+            <Style TargetType="ListViewItem">
+                <Setter Property="Width" Value="210"/>
+                <Setter Property="Height" Value="300"/>
+                <Setter Property="Margin" Value="2"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            </Style>
+        </ListView.ItemContainerStyle>
         <ListView.ItemsPanel>
             <ItemsPanelTemplate>
                 <vwp:VirtualizingWrapPanel/>

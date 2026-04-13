@@ -1,13 +1,14 @@
-﻿using System;
+﻿using SkyWingViewer.Models;
+using System;
 using System.Collections.Generic;
 using System.Text;
+using CommunityToolkit.Mvvm.ComponentModel;
 
-using SkyWingViewer.Models;
 namespace SkyWingViewer.ViewModels;
 
 
 //それぞれのアセットタイプの ViewModel クラスの基底クラス
-public abstract class AssetViewModelBase
+public abstract class AssetViewModelBase : ObservableObject
 {
     protected readonly AssetBase _asset;
     public string AssetPath => _asset.AssetPath;

@@ -8,6 +8,7 @@ using System.IO;
 
 namespace SkyWingViewer.Commons;
 
+//TODO: ディスク操作になるので、非同期版検討
 
 //ジェネリッククラス。where 以下は TKey が null を許容しないということ。
 public class JsonStorage<TKey, TValue> where TKey : notnull

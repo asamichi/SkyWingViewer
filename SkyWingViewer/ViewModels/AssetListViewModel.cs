@@ -22,20 +22,24 @@ public partial class AssetListViewModel : ObservableObject
     //ディレクトリ内の各アセットを格納
     public ObservableCollection<AssetViewModelBase> Assets { get; } = new();
 
+    public AssetListViewModelFactory _factory;
+
     [ObservableProperty]
     public string? targetPath;
 
-    public AssetListViewModel(TargetNavigationService targetNavigationService)
+    public AssetListViewModel(TargetNavigationService targetNavigationService,AssetListViewModelFactory factory)
     {
         _targetNavigationService = targetNavigationService;
         TargetPath = _targetNavigationService.Path;
+        _factory = factory;
         LoadDirectory(TargetPath);
         //イベント登録
         _targetNavigationService.TargetPathChanged += OnTargetPathChanged;
     }
 
 
-
+    //TODO: VM に書くのは少し微妙な内容な気もするが、切り出すべきかと言われると最小の処理しか今はしてない感じもする。将来太ってきたら別クラスへの切り出しを検討
+    //TODO: ファイル数膨大なディレクトリを開いて問題ありそうなら非同期にする等検討
     //ディレクトリ内の各アセットを Assets コレクションに追加 = ListView の ItemsSource に追加
     public void LoadDirectory(string directoryPath)
     {
@@ -45,7 +49,7 @@ public partial class AssetListViewModel : ObservableObject
         foreach (var filePath in Directory.EnumerateFiles(directoryPath))
         {
             var asset = AssetFactory.CreateAssetInstance(filePath);
-            var vm = AssetListViewModelFactory.Create(asset);
+            var vm = _factory.Create(asset);
             if (vm == null) continue;
             Assets.Add(vm);
         }

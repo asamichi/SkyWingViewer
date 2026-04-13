@@ -19,8 +19,10 @@ public static class AssetFactory
 
     public static AssetBase CreateAssetInstance(string path)
     {
+        //拡張子を取得
         string extension = Path.GetExtension(path).ToLower();
 
+        //拡張子が対応する AssetType でインスタンスを払い出す
         foreach (var type in _assetCreater)
         {
             if (type.IsAssetType(extension))
