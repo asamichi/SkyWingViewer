@@ -13,6 +13,9 @@
         <DataTemplate DataType="{x:Type vm:TargetPathBarViewModel}">
             <views:TargetPathBarView/>
         </DataTemplate>
-        
+
+        <DataTemplate DataType="{x:Type vm:AssetListItemFooterViewModel}">
+            <views:AssetListItemFooterView/>
+        </DataTemplate>
     </Application.Resources>
 </Application>

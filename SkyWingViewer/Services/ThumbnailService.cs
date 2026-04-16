@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using SkyWingViewer.Models;
 using System;
 using System.Collections.Generic;
@@ -22,16 +23,41 @@ public class ThumbnailRequest
     //public TaskCompletionSource<BitmapImage> Completion { get; init; }
     public Action<BitmapImage> OnCompleted { get; }
 
-    public ThumbnailRequest(ImageAsset asset,Action<BitmapImage> onCompleted)
+    public CancellationToken _token;
+
+    public ThumbnailRequest(ImageAsset asset,Action<BitmapImage> onCompleted, CancellationToken token)
     {
         Asset = asset;
         //Completion = new();
         OnCompleted = onCompleted;
+        _token = token;
     }
 }
 
 public class ThumbnailService : BackgroundService
 {
+    ILogger _logger;
+    //キー（拡張子）は大文字小文字を区別しない
+    private readonly Dictionary<string, IThumbnailProvider> _providers = new Dictionary<string, IThumbnailProvider>(StringComparer.OrdinalIgnoreCase);
+    public ThumbnailService(IEnumerable<IThumbnailProvider> providers,ILogger<ThumbnailService> logger)
+    {
+        _logger = logger;
+
+        //重複チェックしつつ、SupportedExtensions,provider の組を登録していく。重複は一旦先勝ち
+        foreach (IThumbnailProvider provider in providers)
+        {
+            foreach(string ext in provider.SupportedExtensions)
+            {
+                if (_providers.ContainsKey(ext) == false)
+                {
+                    _providers.Add(ext, provider);
+                }
+            }
+        }
+    }
+
+    /* ここからバックグラウンドサービスとしての処理 */
+
     private readonly Channel<ThumbnailRequest> _channel = Channel.CreateBounded<ThumbnailRequest>(new BoundedChannelOptions(capacity: 100)
     {
         FullMode = BoundedChannelFullMode.Wait,
@@ -49,12 +75,13 @@ public class ThumbnailService : BackgroundService
         }
         catch (Exception ex)
         {
-            //TODO: 例外をログに記録
+            _logger.LogInformation("例外が発生しました。{ex}",ex);
         }
 
     }
 
     //TODO: ターゲットディレクトリが変更された際の動作の調整。中身をクリアするか、今のディレクトリを優先するようにする等。
+    //TODO: キャッシュファイルの有効性チェック。元画像の最終更新日時とサムネイルの作成日時で比較
     protected override async Task ExecuteAsync(CancellationToken token)
     {
         //ここでサムネイルサービスの並列数を指定
@@ -64,10 +91,27 @@ public class ThumbnailService : BackgroundService
         {
             await foreach (var request in _channel.Reader.ReadAllAsync(token))
             {
-                //セマフォ取れるまでここで待機
-                await semaphore.WaitAsync(token);
+                //キャンセル済みなら次に行く
+                if (request._token.IsCancellationRequested)
+                {
+                    _logger.LogTrace("ループ進入時にキャンセル済みなためスキップされました。{FilePath}", request.Asset.AssetPath);
+                    continue;
+                }
 
-                //ここで別スレッドに処理投げる
+                try
+                {
+                    //セマフォ取れるまでここで待機
+                    await semaphore.WaitAsync(request._token);
+                }
+                catch (OperationCanceledException)
+                {
+                    // キャンセルされた場合は想定内なので無視して良い
+                    _logger.LogTrace("セマフォ取得待ち中にキャンセルされました。{FilePath}", request.Asset.AssetPath);
+                    continue;
+                }
+
+                //ここで別スレッドに処理投げる。
+                //セマフォのリリースもあるので、これはリクエストのキャンセルトークンを渡さない。アプリ終了時はキャンセルで良い。
                 _ = Task.Run(() =>
                 {
                     try
@@ -81,13 +125,10 @@ public class ThumbnailService : BackgroundService
                             request.OnCompleted.Invoke(bitmap);
                         });
                     }
-                    catch (TaskCanceledException)
-                    {
-                        // キャンセルされた場合は想定内なので無視して良い
-                    }
                     catch (Exception ex)
                     {
-                        //TODO: 例外をログに記録
+                        _logger.LogInformation("例外が発生しました。{ex}", ex);
+
                     }
                     finally
                     {
@@ -106,14 +147,20 @@ public class ThumbnailService : BackgroundService
                 
             }
         }
+        catch (TaskCanceledException)
+        {
+            // キャンセルされた場合は想定内なので無視して良い
+        }
         catch (Exception ex)
         {
-            //TODO: 例外のログ出力
+            _logger.LogInformation("例外が発生しました。{ex}", ex);
+
         }
     }
 
 
 
+    /* ここからサムネイルの取得処理関係 */
 
     public string ThumbnailFilePath { get; private set; } = Path.Combine(AppContext.BaseDirectory, "thumbnails");
 
@@ -132,9 +179,6 @@ public class ThumbnailService : BackgroundService
     }
 
     public ImageSize CurrentThumbnailSize = new(210, 300);
-
-
-
 
 
     public BitmapImage getImageCache(string path)
@@ -177,7 +221,6 @@ public class ThumbnailService : BackgroundService
         bitmapImage.BeginInit();
         bitmapImage.CacheOption = BitmapCacheOption.OnLoad; //即座にメモリに展開して、画像へのアクセスは閉じる
         bitmapImage.StreamSource = stream;
-        bitmapImage.DecodePixelWidth = 210;
         bitmapImage.EndInit();
 
         //UI スレッドで利用できるように Freeze
@@ -192,23 +235,38 @@ public class ThumbnailService : BackgroundService
     private void CreateThumbnailFile(string filePath,string outputPath)
     {
         ImageSize currentThumbnailSize = CurrentThumbnailSize;//実体コピー。処理中にサムネイルサイズの指定が変わってもこの回での整合性は保たれる
-        BitmapImage original = new();
+        BitmapSource? original = null;
 
 
         //WQHD のスクショ(jpb) + HDD でも特に軽い印象だったので一旦これで
         //TODO: 10MB 越えの .bmp 形式の WQHD スクショは他の画像より優位に遅かったように見えたときがあった = 差異のポイントからこの読み取りが重かったと想定されるので、非同期にしてスレッド解放して上げても良いかも。ファイル読み取り非同期かはディスクIO待ち中のスレッド有効活用、DecodePixelWidth 等でメモリ節約できる
-
-        using(FileStream stream = File.OpenRead(filePath))
-        {
-            original.BeginInit();
-            original.CacheOption = BitmapCacheOption.OnLoad;
-            original.StreamSource = stream;
-            //サイズ自体は暫定。簡易的な最適化として
-            original.DecodePixelWidth = currentThumbnailSize.Width * 2;
-            original.EndInit();
-            original.Freeze();
-        }
         
+        //拡張子を取得　-> 対応する処理が _provider にあればそちらを実行
+        string extension = Path.GetExtension(filePath);
+        if (_providers.ContainsKey(extension))
+        {
+            original = _providers[extension].GetBitmapImage(filePath);
+            _logger.LogTrace("オリジナルを読み込みました。{type}", ".clip 拡張");
+
+        }
+
+        //TODO: サムネイル画質荒くていいなら shellFile の優先度上げていいかも。OS キャッシュある時はそちらが早い、無いときは概ね同じくらい
+        if (original == null)
+        {
+            original = DirectReadBitmapImage.GetBitmapImage(filePath, currentThumbnailSize.Width, currentThumbnailSize.Height);
+            if(original!= null)
+            _logger.LogTrace("オリジナルを読み込みました。ファイル名：{filename}, 読み取りタイプ: {type}",Path.GetFileName(filePath),"通常読み取り");
+        }
+        if(original == null)
+        {
+            original = CreateBitmapImage(filePath);
+            _logger.LogTrace("オリジナルを読み込みました。ファイル名：{filename}, 読み取りタイプ: {type}, 読み取りサイズ {x}x{y}", Path.GetFileName(filePath), "shellFile 読み取り",original.Width,original.Height);
+        }
+
+
+
+
+
         //縦サイズ、横サイズ、縦横比
         //int originalWidth = original.PixelWidth; //PixelWidthは int 型
         //int originalHeight = original.PixelHeight;

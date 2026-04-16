@@ -20,9 +20,11 @@ public partial class AssetListViewModel : ObservableObject
     private TargetNavigationService _targetNavigationService;
 
     //ディレクトリ内の各アセットを格納
-    public ObservableCollection<AssetViewModelBase> Assets { get; } = new();
+    public ObservableCollection<Object> Assets { get; } = new();
 
-    public AssetListViewModelFactory _factory;
+    public AssetListViewModelFactory _vmFactory;
+
+    public CancellationTokenSource? directoryCTS = null;
 
     [ObservableProperty]
     public string? targetPath;
@@ -31,7 +33,7 @@ public partial class AssetListViewModel : ObservableObject
     {
         _targetNavigationService = targetNavigationService;
         TargetPath = _targetNavigationService.Path;
-        _factory = factory;
+        _vmFactory = factory;
         LoadDirectory(TargetPath);
         //イベント登録
         _targetNavigationService.TargetPathChanged += OnTargetPathChanged;
@@ -45,21 +47,37 @@ public partial class AssetListViewModel : ObservableObject
     {
         //初期化
         Assets.Clear();
+        if (directoryCTS != null)
+        {
+            directoryCTS.Cancel();
+            directoryCTS.Dispose();
+        }
+
+        //このディレクトリで利用する cst を作成
+        //WILL: キャンセルトークンの管理が複雑になったり何か困ったら、CommunityToolkit のメッセンジャーの利用を検討
+        directoryCTS = new();
+
+        foreach (var directorys in Directory.EnumerateDirectories(directoryPath))
+        {
+            DirectoryViewModel directoryViewModel = new DirectoryViewModel(directorys);
+            Assets.Add(directoryViewModel);
+        }
 
         foreach (var filePath in Directory.EnumerateFiles(directoryPath))
         {
             var asset = AssetFactory.CreateAssetInstance(filePath);
-            var vm = _factory.Create(asset);
+            var vm = _vmFactory.Create(asset, directoryCTS);
             if (vm == null) continue;
             Assets.Add(vm);
         }
+
+
     }
 
     // TargetPath が変わった時の処理
     private void OnTargetPathChanged()
     {
         TargetPath = _targetNavigationService.Path;
-
         //新しいターゲットの内容に更新して表示する
         LoadDirectory(TargetPath);
     }

@@ -1,4 +1,5 @@
-﻿using SkyWingViewer.Models;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SkyWingViewer.Models;
 using SkyWingViewer.Services;
 using System;
 using System.Collections.Generic;
@@ -8,13 +9,14 @@ namespace SkyWingViewer.ViewModels;
 
 public class AssetListViewModelFactory
 {
-    private ThumbnailService _thumbnailService;
-    public AssetListViewModelFactory(ThumbnailService ts)
+    private IServiceProvider _serviceProvider;
+
+    public AssetListViewModelFactory(IServiceProvider serviceProvider)
     {
-        _thumbnailService = ts;
+        _serviceProvider = serviceProvider;
     }
     //asset の形式に応じた VM を返却
-    public AssetViewModelBase? Create(AssetBase asset)
+    public AssetViewModelBase? Create(AssetBase asset, CancellationTokenSource cts)
     {
         //WhenAddType: 対応形式が増えたらここに追加
         //asset の型で分岐
@@ -22,10 +24,12 @@ public class AssetListViewModelFactory
         {
             //ImageAsset 型なら、変数 image に入れつつ処理を進める（キャストを書かなくてよい）
             case ImageAsset image:
-                return new ImageAssetViewModel(image,_thumbnailService);
-
-            default:
-                //TODO: 仮実装なので後程検討すること。
+                //return new ImageAssetViewModel(image,_thumbnailService);
+                //[ActivatorUtilities.CreateInstance メソッド (Microsoft.Extensions.DependencyInjection) | Microsoft Learn](https://learn.microsoft.com/ja-jp/dotnet/api/microsoft.extensions.dependencyinjection.activatorutilities.createinstance?view=net-8.0)
+                return ActivatorUtilities.CreateInstance<ImageAssetViewModel>(_serviceProvider, image,cts.Token);
+            case OtherAsset otherAsset:
+                return ActivatorUtilities.CreateInstance<OtherAssetViewModel>(_serviceProvider, otherAsset,cts.Token);
+            default :
                 return null;
         }
     }

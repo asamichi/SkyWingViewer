@@ -12,8 +12,14 @@ public abstract class AssetViewModelBase : ObservableObject
 {
     protected readonly AssetBase _asset;
     public string AssetPath => _asset.AssetPath;
+
+    private readonly AssetListItemFooterViewModel _footer;
+
+    public AssetListItemFooterViewModel Footer => _footer;
     protected AssetViewModelBase(AssetBase asset)
     {
         _asset = asset;
+        _footer = new AssetListItemFooterViewModel(asset);
+        
     }
 }

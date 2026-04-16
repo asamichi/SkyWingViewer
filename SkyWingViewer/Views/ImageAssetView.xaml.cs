@@ -28,6 +28,8 @@ namespace SkyWingViewer.Views
         {
             if (this.DataContext is ImageAssetViewModel vm)
             {
+                //イベント発火テスト用
+                //vm.test1();
                 /*
                 DependencyPropertyChangedEventArgs.NewValue プロパティ (System.Windows) | Microsoft Learn
                 https://learn.microsoft.com/ja-jp/dotnet/api/system.windows.dependencypropertychangedeventargs.newvalue?view=windowsdesktop-10.0
@@ -43,10 +45,9 @@ namespace SkyWingViewer.Views
                     {
                         return;
                     }
-                    using (var cancellationTokenSource = new CancellationTokenSource())
-                    {
-                        await vm.LoadThumbnail(cancellationTokenSource.Token);
-                    }
+
+                    await vm.LoadThumbnail();
+
                 }
                 else
                 {
@@ -55,5 +56,15 @@ namespace SkyWingViewer.Views
 
             }
         }
+
+        //イベント発火テスト用
+        //private async void OnLoaded(object sender, RoutedEventArgs e)
+        //{
+        //    if (this.DataContext is ImageAssetViewModel vm)
+        //    {
+        //        vm.test2();
+
+        //    }
+        //}
     }
 }

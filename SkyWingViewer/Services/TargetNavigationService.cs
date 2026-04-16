@@ -2,13 +2,16 @@
 using SkyWingViewer.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using static Microsoft.WindowsAPICodePack.Shell.PropertySystem.SystemProperties.System;
+using System.Windows;
 
 namespace SkyWingViewer.Services;
 
 public partial class TargetNavigationService : ObservableObject
 {
-    public string Path { get; private set; }
+    public string Path => _model.Path;
 
     private TargetDirectory _model;
 
@@ -17,23 +20,21 @@ public partial class TargetNavigationService : ObservableObject
     public TargetNavigationService(TargetDirectory model)
     {
         _model = model;
-        Path = _model.Path;
 
         //イベント登録
         _model.PathChanged += OnPathChanged;
     }
 
 
-    //TODO: ディレクトリの存在判定。
     public void SetPath(string path)
     {
-        Path = path;
-        TargetPathChanged?.Invoke();
+        _model.SetPath(path);
     }
 
     private void OnPathChanged()
     {
-        SetPath(_model.Path);
+        //SetPath(_model.Path);
+        TargetPathChanged?.Invoke();
     }
 
 

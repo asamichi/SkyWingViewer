@@ -7,6 +7,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using System.Windows.Media.Imaging;
 using SkyWingViewer.Services;
 
+using Microsoft.WindowsAPICodePack.Shell;
+using Microsoft.Extensions.Logging;
+using System.IO;
+
 namespace SkyWingViewer.ViewModels;
 
 public partial class ImageAssetViewModel : AssetViewModelBase
@@ -18,18 +22,26 @@ public partial class ImageAssetViewModel : AssetViewModelBase
     //同じファイルのサムネイル処理を複数回しないように
     private int _isLoading = 0;
     private ThumbnailService thumbnailService;
+    private ILogger _logger;
 
-      
-    public ImageAssetViewModel(ImageAsset imageAsset,ThumbnailService ts) : base(imageAsset)
+    public CancellationToken _cancellationToken;
+
+
+    public ImageAssetViewModel(ImageAsset imageAsset,ThumbnailService ts,ILogger<ImageAssetViewModel> logger,CancellationToken ct) : base(imageAsset)
     {
         thumbnailService = ts;
+        _logger = logger;
+        _cancellationToken = ct;
     }
 
 
 
-    public async Task LoadThumbnail(CancellationToken cancellationToken)
+    public async Task LoadThumbnail()
     {
-        if(_isLoading == 1 || Thumbnail != null)
+        // すでに読み込み済みなら何もしない
+        if (Thumbnail != null) return;
+
+        if (_isLoading == 1 || Thumbnail != null)
         {
             return;
         }
@@ -44,11 +56,21 @@ public partial class ImageAssetViewModel : AssetViewModelBase
             ThumbnailRequest thumbnailRequest = new ThumbnailRequest(imageAsset,(result) =>
             {
                 this.Thumbnail = result;
-            });
-            await thumbnailService.AddQueueAsync(thumbnailRequest,cancellationToken);
+            }, _cancellationToken);
+            await thumbnailService.AddQueueAsync(thumbnailRequest, _cancellationToken);
         }
         //現状必要ない
         //_isLoading = 0;
     }
+
+    //イベント発火テスト用
+    //public async void test1()
+    //{
+    //    _logger.LogInformation("OnIsVisibleChanged!{path}", _asset.AssetPath);
+    //}
+    //public async void test2()
+    //{
+    //    _logger.LogInformation("OnLoaded!{path}", _asset.AssetPath);
+    //}
 }
 

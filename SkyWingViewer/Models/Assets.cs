@@ -77,10 +77,11 @@ public class ImageAsset : AssetBase, IAssetBase
 {
     public string ThumbnailPath { get; set; }
 
+    //WILL: .clip のような標準で対応していなかったもので独立クラスを必要とするものは、プラグイン形式での追加ができるようにしたい
     //対応する拡張子の一覧
     public static readonly HashSet<string> ImageExtensions = new()
     {
-        ".jpg",".jpeg",".png",".bmp",".gif",".webp"
+        ".jpg",".jpeg",".png",".bmp",".gif",".webp",".clip"
     };
 
     public ImageAsset(string assetPath, string thumbnailPath = "") : base(assetPath, AssetTypes.Image)

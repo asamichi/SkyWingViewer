@@ -1,5 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog;
 using SkyWingViewer.Models;
 using SkyWingViewer.Services;
 using SkyWingViewer.ViewModels;
@@ -7,8 +10,10 @@ using SkyWingViewer.Views;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Windows.Threading;
 using System.Windows;
+using System.Windows.Threading;
+
+
 
 namespace SkyWingViewer;
 
@@ -18,8 +23,32 @@ class Program
     static void Main(string[] args)
     {
 
-        //    //ビルダー作成
-            HostApplicationBuilder builder = Host.CreateApplicationBuilder();
+        //ビルダー作成
+         HostApplicationBuilder builder = Host.CreateApplicationBuilder();
+
+        /* ログ関係
+        /* serilog の設定 
+         * CompactJsonFormatter 形式のログなため、閲覧時には下記等を DL して利用することを推奨
+         https://github.com/warrenbuckley/Compact-Log-Format-Viewer/releases
+         
+         */
+        //設定ファイル読み込み
+        IConfiguration config = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory) // アプリのディレクトリを基準パスに設定
+            .AddJsonFile("appsettings.json")  // 設定ソース(1): JSONファイル
+            .Build();
+
+        //  読み込んだ設定ファイルを元に設定
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(config)
+            .CreateLogger();
+
+        // 既存のプロバイダをクリア
+        builder.Logging.ClearProviders();
+        //ILogger<T>でSerilogが使えるようにDIに登録（Log.Loggerの設定を使用）
+        builder.Logging.AddSerilog(dispose: true);
+        /* ログ関係 ここまで*/
+
 
         //TODO: 暫定。初期ページ作るなり、何か考えること
         //モデル登録
@@ -34,10 +63,15 @@ class Program
         builder.Services.AddSingleton<ThumbnailService>();
         builder.Services.AddHostedService<ThumbnailService>(sp=> sp.GetRequiredService<ThumbnailService>());
 
+        //サムネイル関係登録
+        builder.Services.AddSingleton<IThumbnailProvider, ClipStudioThumbnailLoader>();
+
         //vm 登録
         builder.Services.AddTransient<AssetListViewModel>();
         builder.Services.AddTransient<TargetPathBarViewModel>();
         builder.Services.AddSingleton<AssetListViewModelFactory>();
+        builder.Services.AddTransient<OtherAssetViewModel>();
+
 
         //ビルド
         IHost host = builder.Build();

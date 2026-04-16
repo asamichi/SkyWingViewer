@@ -15,17 +15,27 @@
             <!--<Image Source="{Binding AssetPath, IsAsync=True}"/>-->
             <local:ImageAssetView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:OtherAssetViewModel}">
+            <local:OtherAssetView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:DirectoryViewModel}">
+            <local:DirectoryView/>
+        </DataTemplate>
     </UserControl.Resources>
 
     <!--暫定で、とりあえず2ページ分くらい先読みしておく(CacheXXX の設定)-->
     <ListView
         ItemsSource="{Binding Assets, Mode=OneWay}"
-        VirtualizingPanel.CacheLength="2"
-        VirtualizingPanel.CacheLengthUnit="Page">
+        VirtualizingPanel.CacheLength="50"
+        VirtualizingPanel.CacheLengthUnit="Item">
+        <!--CacheLengthUnit=Page はうまく動かない。ユーザーコントロール出してるから？安定して先読みできる Item に一旦変更。先読み数は WQHD でも画面内50枚程度なので、一旦その程度で-->
+        <!--VirtualizingPanel.VirtualizationMode="Recycling">-->
+        <!--Recyclingは実装と相性が悪いのかわからないが、スクロースしてもスクロール先のサムネイル作成処理が走らない。一旦保留。OnIsVisibleChangedが発火して無いことを確認済み-->
+
         <ListView.ItemContainerStyle>
             <Style TargetType="ListViewItem">
                 <Setter Property="Width" Value="210"/>
-                <Setter Property="Height" Value="300"/>
+                <Setter Property="Height" Value="320"/>
                 <Setter Property="Margin" Value="2"/>
                 <Setter Property="Padding" Value="0"/>
                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -38,8 +48,7 @@
         </ListView.ItemsPanel>
         <ListView.ItemTemplate>
             <DataTemplate>
-                <ContentControl Content="{Binding}">
-                </ContentControl>
+                <ContentControl Content="{Binding}"/>
             </DataTemplate>
         </ListView.ItemTemplate>
     </ListView>
