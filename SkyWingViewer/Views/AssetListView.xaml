@@ -8,6 +8,7 @@
              xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
              xmlns:vm="clr-namespace:SkyWingViewer.ViewModels"
              xmlns:System="clr-namespace:System;assembly=mscorlib"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
         <!--WhenAddType: 対応形式が増えたらここに追加。対応する VM も追加-->
@@ -25,12 +26,18 @@
 
     <!--暫定で、とりあえず2ページ分くらい先読みしておく(CacheXXX の設定)-->
     <ListView
-        ItemsSource="{Binding Assets, Mode=OneWay}"
-        VirtualizingPanel.CacheLength="50"
-        VirtualizingPanel.CacheLengthUnit="Item">
+        x:Name="AssetsList"
+        ItemsSource="{Binding Assets, Mode=OneWay, NotifyOnTargetUpdated=True}"
+        TargetUpdated="AssetsListTargetUpdated"
+        VirtualizingPanel.CacheLength="100"
+        VirtualizingPanel.CacheLengthUnit="Item"
+        >
         <!--CacheLengthUnit=Page はうまく動かない。ユーザーコントロール出してるから？安定して先読みできる Item に一旦変更。先読み数は WQHD でも画面内50枚程度なので、一旦その程度で-->
         <!--VirtualizingPanel.VirtualizationMode="Recycling">-->
         <!--Recyclingは実装と相性が悪いのかわからないが、スクロースしてもスクロール先のサムネイル作成処理が走らない。一旦保留。OnIsVisibleChangedが発火して無いことを確認済み-->
+        <!--ItemsSource="{Binding Assets, Mode=OneWay, NotifyOnTargetUpdated=True}"
+        TargetUpdated="AssetsListTargetUpdated" でAssets が変わったタイミングでイベント発火させられる。
+        最上までスクロールさせようと思ったが、IsVisibleChanged が発火しないので中断。-->
 
         <ListView.ItemContainerStyle>
             <Style TargetType="ListViewItem">
@@ -39,6 +46,10 @@
                 <Setter Property="Margin" Value="2"/>
                 <Setter Property="Padding" Value="0"/>
                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <!--ダブルクリック時の動作-->
+                <EventSetter Event="MouseDoubleClick" Handler="ListViewItemMouseDoubleClick"/>
+                <!--右クリックの操作-->
+                <Setter Property="ContextMenu" Value="{StaticResource AssetContextMenu}"/>
             </Style>
         </ListView.ItemContainerStyle>
         <ListView.ItemsPanel>

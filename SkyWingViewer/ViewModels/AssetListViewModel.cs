@@ -1,11 +1,14 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using SkyWingViewer.Models;
 using SkyWingViewer.Services;
+using SkyWingViewer.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace SkyWingViewer.ViewModels;
 
@@ -20,7 +23,8 @@ public partial class AssetListViewModel : ObservableObject
     private TargetNavigationService _targetNavigationService;
 
     //ディレクトリ内の各アセットを格納
-    public ObservableCollection<Object> Assets { get; } = new();
+    [ObservableProperty]
+    private ObservableCollection<Object> assets = new();
 
     public AssetListViewModelFactory _vmFactory;
 
@@ -46,7 +50,8 @@ public partial class AssetListViewModel : ObservableObject
     public void LoadDirectory(string directoryPath)
     {
         //初期化
-        Assets.Clear();
+        //Assets.Clear();
+        Assets = new ObservableCollection<Object>();
         if (directoryCTS != null)
         {
             directoryCTS.Cancel();
@@ -59,7 +64,8 @@ public partial class AssetListViewModel : ObservableObject
 
         foreach (var directorys in Directory.EnumerateDirectories(directoryPath))
         {
-            DirectoryViewModel directoryViewModel = new DirectoryViewModel(directorys);
+            DirectoryModel model = new DirectoryModel(directorys);
+            DirectoryViewModel directoryViewModel = _vmFactory.Create(model, directoryCTS);
             Assets.Add(directoryViewModel);
         }
 

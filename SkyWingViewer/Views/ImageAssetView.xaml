@@ -7,7 +7,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              IsVisibleChanged="OnIsVisibleChanged">
-    <!--Loaded="OnLoaded"-->             
+    <!--Loaded="OnLoaded">-->
     <!--このコントロールが表示された時、OnIsVisibleChanged が発火する-->
     <StackPanel>
         <Image Source="{Binding Thumbnail}"/>

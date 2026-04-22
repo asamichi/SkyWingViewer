@@ -60,11 +60,12 @@ namespace SkyWingViewer.Views
         //イベント発火テスト用
         //private async void OnLoaded(object sender, RoutedEventArgs e)
         //{
-        //    if (this.DataContext is ImageAssetViewModel vm)
-        //    {
-        //        vm.test2();
+        //    //if (this.DataContext is ImageAssetViewModel vm)
+        //    //{
+        //    //    vm.test2();
 
-        //    }
+        //    //}
+
         //}
     }
 }

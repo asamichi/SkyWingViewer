@@ -15,6 +15,7 @@ using System.Windows.Media.Imaging;
 namespace SkyWingViewer.Services;
 
 
+//WILL: OpenCvSharp3 による縮小でサムネイル画質や速度面で改善があるか試す。https://koshian2.hatenablog.jp/entry/2017/11/23/212813
 public class ThumbnailRequest
 {
     public ImageAsset Asset { get; init; }
@@ -58,24 +59,29 @@ public class ThumbnailService : BackgroundService
 
     /* ここからバックグラウンドサービスとしての処理 */
 
-    private readonly Channel<ThumbnailRequest> _channel = Channel.CreateBounded<ThumbnailRequest>(new BoundedChannelOptions(capacity: 100)
+    private readonly Channel<ThumbnailRequest> _channel = Channel.CreateBounded<ThumbnailRequest>(new BoundedChannelOptions(capacity: 300)
     {
-        FullMode = BoundedChannelFullMode.Wait,
+        //FullMode = BoundedChannelFullMode.Wait,
+        FullMode = BoundedChannelFullMode.DropOldest,
     });
 
-    public async Task AddQueueAsync(ThumbnailRequest request, CancellationToken token)
+    public async Task AddQueueAsync(ThumbnailRequest request)
     {
         try
         {
-            await _channel.Writer.WriteAsync(request, token);
+            await _channel.Writer.WriteAsync(request, request._token);
         }
         catch (ChannelClosedException)
         {
             // キャンセルされた場合は想定内なので無視して良い
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogTrace("操作がキャンセルされました。{FilePath}", request.Asset.AssetPath);
+        }
         catch (Exception ex)
         {
-            _logger.LogInformation("例外が発生しました。{ex}",ex);
+            _logger.LogInformation("AddQueueAsync の際に例外が発生しました。{ex}", ex);
         }
 
     }
@@ -85,7 +91,8 @@ public class ThumbnailService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken token)
     {
         //ここでサムネイルサービスの並列数を指定
-        using SemaphoreSlim semaphore = new SemaphoreSlim(4);
+        //TODO: 対象ディレクトリが SSD か判別して、SSD なら並列数を増やすようにするともっと良さそう。今は HDD に併せた最適化の結果 1 並列
+        using SemaphoreSlim semaphore = new SemaphoreSlim(1);
         
         try
         {
@@ -127,7 +134,7 @@ public class ThumbnailService : BackgroundService
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogInformation("例外が発生しました。{ex}", ex);
+                        _logger.LogInformation("Task.Run の中で例外が発生しました。{ex}", ex);
 
                     }
                     finally
@@ -143,7 +150,7 @@ public class ThumbnailService : BackgroundService
                         }
 
                     }
-                },token);
+                });
                 
             }
         }
@@ -153,7 +160,7 @@ public class ThumbnailService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogInformation("例外が発生しました。{ex}", ex);
+            _logger.LogInformation("foreach 内部でキャッチできない例外が発生しました。{ex}", ex);
 
         }
     }
@@ -178,7 +185,8 @@ public class ThumbnailService : BackgroundService
         }
     }
 
-    public ImageSize CurrentThumbnailSize = new(210, 300);
+    public ImageSize CurrentThumbnailSize = new((int)(210*1.5),(int)(300* 1.5));
+    //public ImageSize CurrentThumbnailSize = new((int)(2048), (int)(2048));
 
 
     public BitmapImage getImageCache(string path)
@@ -254,17 +262,21 @@ public class ThumbnailService : BackgroundService
         if (original == null)
         {
             original = DirectReadBitmapImage.GetBitmapImage(filePath, currentThumbnailSize.Width, currentThumbnailSize.Height);
-            if(original!= null)
-            _logger.LogTrace("オリジナルを読み込みました。ファイル名：{filename}, 読み取りタイプ: {type}",Path.GetFileName(filePath),"通常読み取り");
+            if (original != null)
+                _logger.LogTrace("オリジナルを読み込みました。ファイル名：{filename}, 読み取りタイプ: {type}", Path.GetFileName(filePath), "通常読み取り");
         }
-        if(original == null)
+        if (original == null)
         {
             original = CreateBitmapImage(filePath);
             _logger.LogTrace("オリジナルを読み込みました。ファイル名：{filename}, 読み取りタイプ: {type}, 読み取りサイズ {x}x{y}", Path.GetFileName(filePath), "shellFile 読み取り",original.Width,original.Height);
         }
 
 
-
+        if(original == null)
+        {
+            _logger.LogInformation("全ての読み取り処理を実行しましたが、original == null です。");
+            return;
+        }
 
 
         //縦サイズ、横サイズ、縦横比

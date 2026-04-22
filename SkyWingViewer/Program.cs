@@ -2,7 +2,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using Serilog;
+using SkyWingViewer.Commons;
 using SkyWingViewer.Models;
 using SkyWingViewer.Services;
 using SkyWingViewer.ViewModels;
@@ -23,15 +25,16 @@ class Program
     static void Main(string[] args)
     {
 
-        //ビルダー作成
-         HostApplicationBuilder builder = Host.CreateApplicationBuilder();
+        /* *************** Host の設定～起動 ************** */
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
-        /* ログ関係
+        /* **********
+         * ログ関係
         /* serilog の設定 
          * CompactJsonFormatter 形式のログなため、閲覧時には下記等を DL して利用することを推奨
          https://github.com/warrenbuckley/Compact-Log-Format-Viewer/releases
          
-         */
+         * **********/
         //設定ファイル読み込み
         IConfiguration config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory) // アプリのディレクトリを基準パスに設定
@@ -47,34 +50,65 @@ class Program
         builder.Logging.ClearProviders();
         //ILogger<T>でSerilogが使えるようにDIに登録（Log.Loggerの設定を使用）
         builder.Logging.AddSerilog(dispose: true);
-        /* ログ関係 ここまで*/
+        /* ********** ログ関係 ここまで ********** */
 
 
         //TODO: 暫定。初期ページ作るなり、何か考えること
-        //モデル登録
+        /* ********** モデル登録 ********* */
         builder.Services.AddTransient<TargetDirectory>(sp =>
         {
             return new TargetDirectory("E:\\テスト用");
         });
 
-        //サービス層登録
+        //json ストレージ
+        builder.Services.AddSingleton<JsonStorage<AppSettings>>(sp =>
+        {
+            return new JsonStorage<AppSettings>("UserSettings.json");
+        });
+
+        /* ********** サービス層登録 ********* */
+        //ターゲットディレクトリのパス
         builder.Services.AddSingleton<TargetNavigationService>();
 
+        //サムネイル関係
         builder.Services.AddSingleton<ThumbnailService>();
         builder.Services.AddHostedService<ThumbnailService>(sp=> sp.GetRequiredService<ThumbnailService>());
 
-        //サムネイル関係登録
+        //サムネイル関係(拡張子追加)
         builder.Services.AddSingleton<IThumbnailProvider, ClipStudioThumbnailLoader>();
 
-        //vm 登録
+        //設定
+        builder.Services.AddSingleton<AppSettings>(sp =>
+        {
+            return sp.GetRequiredService<JsonStorage<AppSettings>>().LoadJson();
+        });
+        //各種機能で使う設定だけ読み込む際に必要なので、設定クラスそれぞれについても依存性を注入すること
+        builder.Services.AddSingleton<FavoriteListSettings>(sp =>
+        {
+            return sp.GetRequiredService<AppSettings>().FavoriteList;
+        });
+
+        //お気に入り
+        builder.Services.AddSingleton<FavoriteListService>();
+           
+        /* ********** vm 登録 ********* */
+        //画面というか領域
         builder.Services.AddTransient<AssetListViewModel>();
         builder.Services.AddTransient<TargetPathBarViewModel>();
-        builder.Services.AddSingleton<AssetListViewModelFactory>();
+        builder.Services.AddTransient<FavoriteListViewModel>();
+
+        //一覧の単体
+        builder.Services.AddTransient<ImageAssetViewModel>();
         builder.Services.AddTransient<OtherAssetViewModel>();
+        builder.Services.AddTransient<DirectoryViewModel>();
+
+        //その他
+        builder.Services.AddSingleton<AssetListViewModelFactory>();
 
 
         //ビルド
         IHost host = builder.Build();
+        /* *************** Host の設定～起動 ここまで ************** */
 
         //生成
         TargetDirectory targetDirectory = host.Services.GetRequiredService<TargetDirectory>();
@@ -85,9 +119,11 @@ class Program
         //vm 作成
         var assetListViewModel = host.Services.GetRequiredService<AssetListViewModel>();
         var targetPathBarViewModel = host.Services.GetRequiredService<TargetPathBarViewModel>();
+        var favoriteListViewModel = host.Services.GetRequiredService<FavoriteListViewModel>();
 
         mainWindow.MainArea.DataContext = assetListViewModel;
         mainWindow.ToolBar.DataContext = targetPathBarViewModel;
+        mainWindow.TreeMenu.DataContext = favoriteListViewModel;
 
         //mainWindow.Show();
 

@@ -57,10 +57,9 @@ public partial class ImageAssetViewModel : AssetViewModelBase
             {
                 this.Thumbnail = result;
             }, _cancellationToken);
-            await thumbnailService.AddQueueAsync(thumbnailRequest, _cancellationToken);
+            await thumbnailService.AddQueueAsync(thumbnailRequest);
         }
-        //現状必要ない
-        //_isLoading = 0;
+        _isLoading = 0;
     }
 
     //イベント発火テスト用

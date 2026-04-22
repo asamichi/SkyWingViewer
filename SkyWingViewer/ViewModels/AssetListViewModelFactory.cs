@@ -3,6 +3,7 @@ using SkyWingViewer.Models;
 using SkyWingViewer.Services;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace SkyWingViewer.ViewModels;
@@ -32,5 +33,10 @@ public class AssetListViewModelFactory
             default :
                 return null;
         }
+    }
+
+    public DirectoryViewModel? Create(DirectoryModel directory, CancellationTokenSource cts)
+    {
+        return ActivatorUtilities.CreateInstance<DirectoryViewModel>(_serviceProvider, directory);
     }
 }

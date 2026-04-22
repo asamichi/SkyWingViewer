@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAPICodePack.Shell;
 using SkyWingViewer.Models;
 using System;
@@ -21,10 +22,12 @@ public partial class OtherAssetViewModel : AssetViewModelBase
     private BitmapSource? iconImage;
 
     public  CancellationToken _cancellationToken;
+    private ILogger<OtherAssetViewModel> _logger;
 
 
-    public OtherAssetViewModel(OtherAsset otherAsset, CancellationToken ct) : base(otherAsset)
+    public OtherAssetViewModel(OtherAsset otherAsset, CancellationToken ct,ILogger<OtherAssetViewModel> logger) : base(otherAsset)
     {
+        _logger = logger;
         _cancellationToken = ct;
         _ = Task.Run(async () =>
         {
@@ -40,20 +43,23 @@ public partial class OtherAssetViewModel : AssetViewModelBase
         // すでに読み込み済みなら何もしない
         if (IconImage != null) return;
 
+        _logger.LogTrace("アイコンの取得を開始します。Path: {path}", _asset.AssetPath);
+
         // 重い処理（Shellアクセス）を別スレッドで実行
-        IconImage = await Task.Run(() =>
+        IconImage = await Task<BitmapSource?>.Run(() =>
         {
             try
             {
                 using (var shellFile = ShellFile.FromFilePath(_asset.AssetPath))
                 {
-                    var bitmap = shellFile.Thumbnail.BitmapSource;
+                    BitmapSource bitmap = shellFile.Thumbnail.BitmapSource;
                     bitmap.Freeze();
                     return bitmap;
                 }
             }
-            catch
+            catch(Exception ex)
             {
+                _logger.LogInformation("LoadThumbnail にてエラーが発生しました : {ex}",ex);
                 return null; // 失敗時はnull（XAML側でデフォルトアイコンを表示させるのが楽）
             }
         });

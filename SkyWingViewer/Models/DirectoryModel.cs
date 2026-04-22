@@ -8,14 +8,18 @@ namespace SkyWingViewer.Models;
 public class DirectoryModel
 {
     public string Path { get; set; }
-    public string Name => System.IO.Path.GetDirectoryName(Path);
+    public string Name => System.IO.Path.GetFileName(Path);
 
+    public DirectoryModel(string path)
+    {
+        SetPath(path);
+    }
     public void SetPath(string path)
     {
-        if (System.IO.Directory.Exists(path) == false)
-        {
-            throw new System.IO.DirectoryNotFoundException($"パスが見つかりません: {path}");
-        }
+        //if (System.IO.Directory.Exists(path) == false)
+        //{
+        //    throw new System.IO.DirectoryNotFoundException($"パスが見つかりません: {path}");
+        //}
         Path = path;
     }
 }

@@ -38,11 +38,37 @@ class DirectReadBitmapImage
             //読み取り専用の SLock、バッファサイズを 64KB に、シーケンシャルアクセス明示
             using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.SequentialScan))
             {
+                /*
+                 * BitmapDecoder.Create
+                 * https://learn.microsoft.com/ja-jp/dotnet/api/system.windows.media.imaging.bitmapdecoder.create?view=windowsdesktop-8.0
+                 * BitmapCreateOptions
+                 * https://learn.microsoft.com/ja-jp/dotnet/api/system.windows.media.imaging.bitmapcreateoptions?view=windowsdesktop-8.0
+                 * DelayCreation bitmapオブジェクトの初期化を必要になるまで遅延。サイズ取るだけなので、これで初期化しないで済む。
+                 */
+                //サイズ測定
+                BitmapDecoder decorder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+                BitmapFrame frame = decorder.Frames[0];
+
+                int width = frame.PixelWidth;
+                int height = frame.PixelHeight;
+                double originalRatio = (double)width / height;
+
+                double thumbnailRatio = (double) ThumbnailSizeWidth / ThumbnailSizeHeight;
+
+                stream.Seek(0, SeekOrigin.Begin);
+
                 original.BeginInit();
                 original.CacheOption = BitmapCacheOption.OnLoad;
                 original.StreamSource = stream;
-                //サイズ自体は暫定。簡易的な最適化として
-                original.DecodePixelWidth = ThumbnailSizeWidth * 2;
+                //読み込み画像の方が横に長い場合、横が余るので縦はサムネイルサイズまであらかじめ縮小してもサムネイルの画質は落ちない
+                if(originalRatio > thumbnailRatio)
+                {
+                    original.DecodePixelHeight = ThumbnailSizeHeight;
+                }
+                else
+                {
+                    original.DecodePixelWidth = ThumbnailSizeWidth;
+                }
                 original.EndInit();
                 original.Freeze();
             }

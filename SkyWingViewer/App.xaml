@@ -3,19 +3,77 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:SkyWingViewer"
              xmlns:vm="clr-namespace:SkyWingViewer.ViewModels"
-             xmlns:views="clr-namespace:SkyWingViewer.Views">
+             xmlns:views="clr-namespace:SkyWingViewer.Views"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
     <Application.Resources>
+        <ResourceDictionary>
+            <!--簡単に適用できるかと思ったがそうでもなかったので保留、正直白でも良い気はする-->
+            <!--<ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/Generic.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Window">
+                <Setter Property="Background" Value="{DynamicResource MaterialDesignPaper}" />
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource MaterialDesignBody}" />
+                <Setter Property="TextElement.FontSize" Value="14" />
+                <Setter Property="FontFamily" Value="{materialDesign:MaterialDesignFont}" />
+            </Style>
 
-        <DataTemplate DataType="{x:Type vm:AssetListViewModel}">
-            <views:AssetListView/>
-        </DataTemplate>
+            <Style TargetType="UserControl">
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource MaterialDesignBody}" />
+            </Style>-->
 
-        <DataTemplate DataType="{x:Type vm:TargetPathBarViewModel}">
-            <views:TargetPathBarView/>
-        </DataTemplate>
 
-        <DataTemplate DataType="{x:Type vm:AssetListItemFooterViewModel}">
-            <views:AssetListItemFooterView/>
-        </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:AssetListViewModel}">
+                <views:AssetListView/>
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:TargetPathBarViewModel}">
+                <views:TargetPathBarView/>
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:AssetListItemFooterViewModel}">
+                <views:AssetListItemFooterView/>
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:FavoriteListViewModel}">
+                <views:FavoriteListView/>
+            </DataTemplate>
+
+            <!--右クリックメニュー用-->
+            <!--参考：https://gist.github.com/pinzolo/3103668-->
+            <!--x:Keyで他のviewから呼び出せるようにする-->
+            <ContextMenu x:Key="AssetContextMenu">
+                <ContextMenu.ItemsSource>
+                    <!--バインディング-->
+                    <Binding Path="ContextMenuItems"/>
+                </ContextMenu.ItemsSource>
+                <ContextMenu.ItemContainerStyle>
+                    <Style TargetType="MenuItem">
+                        <!--Header はメニュー名のこと。それぞれ対応するパラメータをバインド-->
+                        <Setter Property="Header"   Value="{Binding Name}"/>
+                        <Setter Property="Command"  Value="{Binding Command}"/>
+                        <!--後半部分でバインディング対象を親を辿っていって最初に見つかる ContextMenu 型に指定して、
+                        そのうえでそこから PlacementTarget(どこで（どのコントロールで、ViewList ならリストの中のどこのアイテムで）開かれたのか)を取得し、
+                        そのデータコンテキストを指定-->
+                        <Setter Property="CommandParameter" Value="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                        <!-- セパレーター切り替え。 IsSeparator で分岐させる。 -->
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsSeparator}" Value="True">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="MenuItem">
+                                            <Separator/>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ContextMenu.ItemContainerStyle>
+            </ContextMenu>
+        </ResourceDictionary>
     </Application.Resources>
+
+    
 </Application>
