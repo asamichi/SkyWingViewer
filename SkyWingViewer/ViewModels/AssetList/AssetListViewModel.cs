@@ -1,10 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SkyWingViewer.Models;
 using SkyWingViewer.Services;
 using SkyWingViewer.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows.Controls;
@@ -20,24 +22,31 @@ namespace SkyWingViewer.ViewModels;
 public partial class AssetListViewModel : ObservableObject
 {
 
-    private TargetNavigationService _targetNavigationService;
 
     //ディレクトリ内の各アセットを格納
     [ObservableProperty]
     private ObservableCollection<Object> assets = new();
 
+    //VM のファクトリー
     public AssetListViewModelFactory _vmFactory;
 
+    //キャンセルトークン
     public CancellationTokenSource? directoryCTS = null;
 
+    //表示中のディレクトリ対象管理
+    private TargetNavigationService _targetNavigationService;
     [ObservableProperty]
     public string? targetPath;
 
-    public AssetListViewModel(TargetNavigationService targetNavigationService,AssetListViewModelFactory factory)
+    //詳細情報用のサービス等
+    private ItemInformationService _itemInformationService;
+
+    public AssetListViewModel(TargetNavigationService targetNavigationService,AssetListViewModelFactory factory, ItemInformationService itemInformationService)
     {
         _targetNavigationService = targetNavigationService;
         TargetPath = _targetNavigationService.Path;
         _vmFactory = factory;
+        _itemInformationService = itemInformationService;
         LoadDirectory(TargetPath);
         //イベント登録
         _targetNavigationService.TargetPathChanged += OnTargetPathChanged;
@@ -50,6 +59,7 @@ public partial class AssetListViewModel : ObservableObject
     public void LoadDirectory(string directoryPath)
     {
         //初期化
+        //new しないと今の仕組みだと一番上までスクロールしない
         //Assets.Clear();
         Assets = new ObservableCollection<Object>();
         if (directoryCTS != null)
@@ -65,8 +75,11 @@ public partial class AssetListViewModel : ObservableObject
         foreach (var directorys in Directory.EnumerateDirectories(directoryPath))
         {
             DirectoryModel model = new DirectoryModel(directorys);
-            DirectoryViewModel directoryViewModel = _vmFactory.Create(model, directoryCTS);
-            Assets.Add(directoryViewModel);
+            DirectoryViewModel? directoryViewModel = _vmFactory.Create(model, directoryCTS);
+            if(directoryViewModel != null)
+            {
+                Assets.Add(directoryViewModel);
+            }
         }
 
         foreach (var filePath in Directory.EnumerateFiles(directoryPath))
@@ -86,6 +99,20 @@ public partial class AssetListViewModel : ObservableObject
         TargetPath = _targetNavigationService.Path;
         //新しいターゲットの内容に更新して表示する
         LoadDirectory(TargetPath);
+    }
+
+    //
+    [RelayCommand]
+    public void UpdateSelection(object parameter)
+    {
+
+        List<IItemInformationProvider>? list = null;
+        if (parameter is System.Collections.IList parameterList)
+        {
+            list = parameterList.OfType<IItemInformationProvider>().ToList();
+        }
+        _itemInformationService.TargetItems = list;
+
     }
 
 }

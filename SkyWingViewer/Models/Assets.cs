@@ -4,6 +4,8 @@ using System.Text;
 
 using System.IO;
 
+using System.Diagnostics;
+
 namespace SkyWingViewer.Models;
 
 
@@ -44,7 +46,7 @@ public abstract class AssetBase
         Image,
         Other
     }
-    //パス
+    //パス。基底クラスの Path と連動。
     public string AssetPath { get; set; }
 
     //アセットの種類
@@ -53,11 +55,22 @@ public abstract class AssetBase
     //拡張子
     public string Extension => Path.GetExtension(AssetPath).ToLower();
 
+    //メタデータ
+    public ItemMetadata Metadata { get; set; }
+
+
+    //TODO: メタデータを追加する
     public AssetBase(string assetPath, AssetTypes assetType)
     {
         AssetPath = assetPath;
         AssetType = assetType;
+
+        //メタデータの取得
+        FileInfo fileInfo = new FileInfo(AssetPath);
+        Metadata = new ItemMetadata(fileInfo);
+
     }
+
 }
 
 public interface IAssetBase
@@ -83,6 +96,9 @@ public class ImageAsset : AssetBase, IAssetBase
     {
         ".jpg",".jpeg",".png",".bmp",".gif",".webp",".clip"
     };
+
+    //TODO: 画像の詳細情報表示に対応
+    //public ImageAssetMetadata ImageMetadata { get; set; }
 
     public ImageAsset(string assetPath, string thumbnailPath = "") : base(assetPath, AssetTypes.Image)
     {

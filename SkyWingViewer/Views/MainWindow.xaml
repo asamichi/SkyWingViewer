@@ -1,11 +1,21 @@
-﻿<Window x:Class="SkyWingViewer.Views.MainWindow"
+﻿<!--<Window x:Class="SkyWingViewer.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SkyWingViewer.Views"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800">-->
+
+<!--MahApps:  MahApps を外す時はコメントアウトされている方に戻す-->
+<mah:MetroWindow x:Class="SkyWingViewer.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+        Title="SkyWingViewer" Height="450" Width="800"
+        WindowTitleBrush="#1E1E1E"
+        TitleCharacterCasing="Normal">
+
     <!-- コンテンツコントロールで受け取ったVMをそのまま表示する-->
     <!--<ContentControl Content="{Binding}"/>-->
     <Grid>
@@ -13,8 +23,8 @@
             <ColumnDefinition Width="100"/>
             <ColumnDefinition Width="5"/>
             <ColumnDefinition Width="4*"/>
-            <ColumnDefinition Width="0"/>
-            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="30"/>
@@ -28,8 +38,9 @@
         <GridSplitter  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="1" Grid.Column="1"/>
         <ContentControl x:Name="MainArea" Content="{Binding}" Grid.Row="1" Grid.Column="2" />
         <GridSplitter  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="1" Grid.Column="3" />
-        <Button Content="Sub Area" Grid.Row="1" Grid.Column="4"/>
+        <ContentControl x:Name="SubArea" Content="{Binding}" Grid.Row="1" Grid.Column="4"/>
         
         <Button Content="Footer" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5"/>
     </Grid>
-</Window>
+<!--</Window>-->
+</mah:MetroWindow>

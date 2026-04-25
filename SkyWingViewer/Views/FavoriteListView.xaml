@@ -6,14 +6,24 @@
              xmlns:local="clr-namespace:SkyWingViewer.Views"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <StackPanel>
-        <Button Content="追加" Command="{Binding AddFavoriteCommand}"/>
+
+    <!--MahApps: 真っ黒な領域が出来るの防止に、StackPanel->Grid に変更-->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+        <Button Content="追加" Command="{Binding AddFavoriteCommand}" Grid.Row="0"/>
         <ListView
             x:Name="FaboriteListView"
             ItemsSource="{Binding FavoriteList, Mode=TwoWay}" DisplayMemberPath="Name"
-            Tag="{Binding}">
+            Tag="{Binding}"
+            Grid.Row="1">
             <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem">
+                <!--MahApps: MahApps 削除時は BasedOn 以下を削除-->
+                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
                     <!--item の親をたどって ListView の先祖、つまり ListView 自体を基準とする。その DataContext = FavoriteListViewModel
                     これを Tag に保存しておく-->
                     <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListView}}"/>
@@ -45,5 +55,9 @@
                 </Style>
             </ListView.ItemContainerStyle>
         </ListView>
-    </StackPanel>
+        <!--MahApps: 余った領域をバックグラウンド指定して埋める-->
+        <TextBlock Background="{DynamicResource MahApps.Brushes.ThemeBackground}"  Grid.Row="2"/>
+    </Grid>
+
+
 </UserControl>

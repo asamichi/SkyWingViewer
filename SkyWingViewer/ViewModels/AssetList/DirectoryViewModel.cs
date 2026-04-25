@@ -17,20 +17,29 @@ using System.Windows;
 
 namespace SkyWingViewer.ViewModels;
 
-public partial class DirectoryViewModel : ObservableObject, IOpenCommand, IContextMenu
+public partial class DirectoryViewModel : ObservableObject, IOpenCommand, IContextMenu, IItemInformationProvider
 {
+    //モデルとディレクトリパス
     public string directoryPath => _model.Path;
     private DirectoryModel _model;
 
+    //表示時のアイコン
     [ObservableProperty]
     private BitmapSource? iconImage;
 
     private ILogger<DirectoryViewModel> _logger;
 
+    //開く時のコマンド
     public ICommand OpenCommand { get; }
+
+    //右クリックメニュー
     public IList<ContextMenuItem> ContextMenuItems { get; }
 
+    //ディレクトリ遷移のためのサービス
     private TargetNavigationService _targetNavigationService;
+
+    //詳細情報表示用
+    public List<ItemInformation> InformationItems { get; private set; }
 
     public string DirectoryName { get; private set; }
 
@@ -50,6 +59,12 @@ public partial class DirectoryViewModel : ObservableObject, IOpenCommand, IConte
         ContextMenuItems = GetDefaultContextMenu();
 
     }
+
+    public void CreateInformationItems()
+    {
+        InformationItems = ItemInformationService.ConvertItemMetadataToItemInformations(_model.Metadata);
+    }
+
 
     private async Task GetIconAsync(string path)
     {

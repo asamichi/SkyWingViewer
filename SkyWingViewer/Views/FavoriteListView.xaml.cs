@@ -25,6 +25,7 @@ public partial class FavoriteListView : UserControl
         InitializeComponent();
     }
 
+    //TODO: Microsoft.Xaml.Behaviors.Wpf でコードビハインド無しできれいにできそうなので余裕ができたら改造
     private void ListViewItemMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         //sender が ListViewItem で、持っているデータが DirectoryModel なら target に格納。また、ListViewItem 自体は item として格納

@@ -191,7 +191,7 @@ public class ThumbnailService : BackgroundService
 
     public BitmapImage getImageCache(string path)
     {
-        if(File.Exists(path) == false)
+        if (File.Exists(path) == false)
         {
             //TODO: 仮。本当はエラー用の画像にするなり検討
             //imagePath = Path.Combine(AppContext.BaseDirectory, "thumbnails");
@@ -207,13 +207,15 @@ public class ThumbnailService : BackgroundService
         //サムネイルファイルが無いならサムネイルファイルを作成
         if (File.Exists(thumbnailPath) == false)
         {
-            CreateThumbnailFile(path,thumbnailPath);
+            CreateThumbnailFile(path, thumbnailPath);
         }
         //この時点では必ずサムネイルファイルはあるので、それを読んで返す
         return CreateBitmapImage(thumbnailPath);
 
 
     }
+
+
 
 
 

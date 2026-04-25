@@ -1,5 +1,4 @@
-﻿using MahApps.Metro.Controls;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -9,16 +8,17 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace SkyWingViewer.Views
 {
-
-
-    //MahApps:  MahApps を外す時は元に戻す
-    public partial class MainWindow : MetroWindow // Window
+    /// <summary>
+    /// AssetInformationView.xaml の相互作用ロジック
+    /// </summary>
+    public partial class AssetInformationView : UserControl
     {
-        public MainWindow()
+        public AssetInformationView()
         {
             InitializeComponent();
         }

@@ -1,6 +1,7 @@
 ﻿using SkyWingViewer.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -38,7 +39,7 @@ namespace SkyWingViewer.Views
                 */
                 bool isVisible = (bool)e.NewValue;
 
-                if (isVisible)
+                if (isVisible == true)
                 {
                     //サムネイルが読み込まれているならもう Load する必要は無いので return する
                     if (vm.Thumbnail != null)
@@ -52,10 +53,15 @@ namespace SkyWingViewer.Views
                 else
                 {
                     //TODO: サムネイルメモリに乗りすぎて問題になりそうなら、ここに必要に応じて解放するような処理を入れる
+                    //サムネイルがすでに無いならアンロードする必要はない
+                    vm.UnloadThumbnail();
                 }
 
             }
         }
+
+
+
 
         //イベント発火テスト用
         //private async void OnLoaded(object sender, RoutedEventArgs e)

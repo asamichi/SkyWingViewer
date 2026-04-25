@@ -90,12 +90,16 @@ class Program
 
         //お気に入り
         builder.Services.AddSingleton<FavoriteListService>();
+
+        //各アセットかディレクトリの詳細情報
+        builder.Services.AddSingleton<ItemInformationService>();
            
         /* ********** vm 登録 ********* */
         //画面というか領域
         builder.Services.AddTransient<AssetListViewModel>();
         builder.Services.AddTransient<TargetPathBarViewModel>();
         builder.Services.AddTransient<FavoriteListViewModel>();
+        builder.Services.AddTransient<AssetInformationViewModel>();
 
         //一覧の単体
         builder.Services.AddTransient<ImageAssetViewModel>();
@@ -120,10 +124,12 @@ class Program
         var assetListViewModel = host.Services.GetRequiredService<AssetListViewModel>();
         var targetPathBarViewModel = host.Services.GetRequiredService<TargetPathBarViewModel>();
         var favoriteListViewModel = host.Services.GetRequiredService<FavoriteListViewModel>();
+        var assetInformationViewModel = host.Services.GetRequiredService<AssetInformationViewModel>();
 
         mainWindow.MainArea.DataContext = assetListViewModel;
         mainWindow.ToolBar.DataContext = targetPathBarViewModel;
         mainWindow.TreeMenu.DataContext = favoriteListViewModel;
+        mainWindow.SubArea.DataContext = assetInformationViewModel;
 
         //mainWindow.Show();
 

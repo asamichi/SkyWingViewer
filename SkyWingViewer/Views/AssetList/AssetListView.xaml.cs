@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -26,7 +27,10 @@ public partial class AssetListView : UserControl
     }
 
 
+
+
     /* ***** ターゲット変更時にスクロール位置を先頭に戻す ***** */
+    //AI: このスクロールを上の戻す処理は AI 生成
     private void AssetsListTargetUpdated(object sender, DataTransferEventArgs e)
     {
         if (sender is ListView listView)

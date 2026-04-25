@@ -11,25 +11,25 @@ namespace SkyWingViewer.ViewModels;
 
 public partial class TargetPathBarViewModel : ObservableObject
 {
-    private TargetNavigationService _model;
+    private TargetNavigationService _targetNavigationService;
 
     [ObservableProperty]
     public string? targetPath;
 
-    public TargetPathBarViewModel(TargetNavigationService model)
+    public TargetPathBarViewModel(TargetNavigationService targetNavigationService)
     {
-        _model = model;
-        targetPath = _model.Path;
+        _targetNavigationService = targetNavigationService;
+        targetPath = _targetNavigationService.Path;
 
         //イベント登録
-        _model.TargetPathChanged += OnTargetPathChanged;
+        _targetNavigationService.TargetPathChanged += OnTargetPathChanged;
 
     }
 
     //こちらは _model.TargetPathChanged に登録されるほう
     private void OnTargetPathChanged()
     {
-        TargetPath = _model.Path;
+        TargetPath = _targetNavigationService.Path;
     }
 
     //こちらは This.TargetPath が変更されたときに発火
@@ -38,6 +38,7 @@ public partial class TargetPathBarViewModel : ObservableObject
         //本来は SetPath でチェック入るのでいらないけどエディタの警告消し
         if (value == null) return;
 
-        _model.SetPath(value);
+        _targetNavigationService.SetPath(value);
+
     }
 }

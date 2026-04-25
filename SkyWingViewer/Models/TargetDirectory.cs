@@ -15,51 +15,17 @@ public class TargetDirectory
     public string Path { get; private set; }
 
 
-    //TODO: Path のバリデーションチェック
     public TargetDirectory(string path)
     {
-        Path = System.IO.Path.GetFullPath(AdjustPass(path));
+        Path = System.IO.Path.GetFullPath(path);
     }
 
     public void SetPath(string path)
     {
-        string adjustPass = AdjustPass(path);
-        if (Path == adjustPass) return;
-        if (CheckPass(adjustPass) == false) return;
-
-        Path = System.IO.Path.GetFullPath(adjustPass);
+        Path = System.IO.Path.GetFullPath(path);
         PathChanged?.Invoke();
     }
 
-    public bool CheckPass(string path)
-    {
-        //変更の必要が無いなら return
-        if (path == Path) return false;
-
-        //存在しないなら false
-        if (Directory.Exists(path) == false)
-        {
-            MessageBox.Show("存在しないパスが入力されました。");
-            return false;
-        }
-        try
-        {
-            //バリデーションとして使用。エラー吐いたら false。末尾空白などへの対処（Exists は末尾空白を通す）。
-            System.IO.Path.GetFullPath(path);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(@$"無効なパスです : {ex}");
-            return false;
-        }
-        return true;
-    }
-
-    public string AdjustPass(string path)
-    {
-        //Windows 標準機能のパスをコピーでコピーした時、両脇につくのでアプリ側で対応した方が体験が良いと判断。その他ゴミで入りそうなのを trim。
-        return path.Trim(' ','"');
-    }
 
 }
 

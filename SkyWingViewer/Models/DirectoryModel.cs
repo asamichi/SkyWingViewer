@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SkyWingViewer.Models;
 
@@ -10,16 +11,13 @@ public class DirectoryModel
     public string Path { get; set; }
     public string Name => System.IO.Path.GetFileName(Path);
 
+    public ItemMetadata Metadata { get; set; }
+
     public DirectoryModel(string path)
     {
-        SetPath(path);
-    }
-    public void SetPath(string path)
-    {
-        //if (System.IO.Directory.Exists(path) == false)
-        //{
-        //    throw new System.IO.DirectoryNotFoundException($"パスが見つかりません: {path}");
-        //}
         Path = path;
+        FileSystemInfo fileSystemInfo = new DirectoryInfo(path);
+        Metadata = new ItemMetadata(fileSystemInfo);
     }
+
 }

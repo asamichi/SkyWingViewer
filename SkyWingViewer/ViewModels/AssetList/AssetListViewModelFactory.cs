@@ -27,10 +27,10 @@ public class AssetListViewModelFactory
             case ImageAsset image:
                 //return new ImageAssetViewModel(image,_thumbnailService);
                 //[ActivatorUtilities.CreateInstance メソッド (Microsoft.Extensions.DependencyInjection) | Microsoft Learn](https://learn.microsoft.com/ja-jp/dotnet/api/microsoft.extensions.dependencyinjection.activatorutilities.createinstance?view=net-8.0)
-                return ActivatorUtilities.CreateInstance<ImageAssetViewModel>(_serviceProvider, image,cts.Token);
+                return ActivatorUtilities.CreateInstance<ImageAssetViewModel>(_serviceProvider, image, cts.Token);
             case OtherAsset otherAsset:
-                return ActivatorUtilities.CreateInstance<OtherAssetViewModel>(_serviceProvider, otherAsset,cts.Token);
-            default :
+                return ActivatorUtilities.CreateInstance<OtherAssetViewModel>(_serviceProvider, otherAsset, cts.Token);
+            default:
                 return null;
         }
     }
@@ -39,4 +39,6 @@ public class AssetListViewModelFactory
     {
         return ActivatorUtilities.CreateInstance<DirectoryViewModel>(_serviceProvider, directory);
     }
+
+
 }

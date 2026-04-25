@@ -21,6 +21,7 @@ public partial class ImageAssetViewModel : AssetViewModelBase
 
     //同じファイルのサムネイル処理を複数回しないように
     private int _isLoading = 0;
+    private int _isVisible = 0;
     private ThumbnailService thumbnailService;
     private ILogger _logger;
 
@@ -38,11 +39,12 @@ public partial class ImageAssetViewModel : AssetViewModelBase
 
     public async Task LoadThumbnail()
     {
+        _isVisible = 1;
         // すでに読み込み済みなら何もしない
-        if (Thumbnail != null) return;
-
         if (_isLoading == 1 || Thumbnail != null)
         {
+            _logger.LogTrace("再度サムネイル作成要求がありました。。Path: {Path}", _asset.AssetPath);
+
             return;
         }
 
@@ -53,14 +55,30 @@ public partial class ImageAssetViewModel : AssetViewModelBase
         //ImageAsset 型なのは確定だが、エディタに対して明示
         if (_asset is ImageAsset imageAsset)
         {
-            ThumbnailRequest thumbnailRequest = new ThumbnailRequest(imageAsset,(result) =>
+            _logger.LogTrace("サムネイルの作成リクエストを実施します。Path: {Path}", _asset.AssetPath);
+            ThumbnailRequest thumbnailRequest = new ThumbnailRequest(imageAsset,async (result) =>
             {
+                if(this._isVisible == 0)
+                {
+                    _logger.LogTrace("既に必要のないサムネイルのため、値を格納しません。Path: {Path}", _asset.AssetPath);
+                    return;
+                }
                 this.Thumbnail = result;
             }, _cancellationToken);
             await thumbnailService.AddQueueAsync(thumbnailRequest);
         }
+
         _isLoading = 0;
     }
+
+    //TODO: 本当はVM側でキャンセルトークンソースを受け取って、子トークンをサムネイルサービスに渡してそれをキャンセルする仕組みにするべき
+    public async void UnloadThumbnail()
+    {
+        _logger.LogTrace("サムネイルを解放します。Path: {Path}", _asset.AssetPath);
+        _isVisible = 0;
+        Thumbnail = null;
+    }
+
 
     //イベント発火テスト用
     //public async void test1()

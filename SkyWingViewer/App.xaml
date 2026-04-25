@@ -6,22 +6,34 @@
              xmlns:views="clr-namespace:SkyWingViewer.Views"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
     <Application.Resources>
+        <!--AI 作ここから-->
+        <!--MahApps:  MahApps によるテーマ適用処理-->
         <ResourceDictionary>
-            <!--簡単に適用できるかと思ったがそうでもなかったので保留、正直白でも良い気はする-->
-            <!--<ResourceDictionary.MergedDictionaries>
-                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
-                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/Generic.xaml" />
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
+
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Steel.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            <Style TargetType="Window">
-                <Setter Property="Background" Value="{DynamicResource MaterialDesignPaper}" />
-                <Setter Property="TextElement.Foreground" Value="{DynamicResource MaterialDesignBody}" />
-                <Setter Property="TextElement.FontSize" Value="14" />
-                <Setter Property="FontFamily" Value="{materialDesign:MaterialDesignFont}" />
+            <Style TargetType="ListView" BasedOn="{StaticResource MahApps.Styles.ListView}">
+                <!--<Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+                <Setter Property="VirtualizingStackPanel.IsVirtualizing" Value="True"/>-->
+                <Setter Property="Background" Value="{DynamicResource MahApps.Brushes.ThemeBackground}"/>
+                <Setter Property="BorderThickness" Value="0"/>
             </Style>
 
+            <Style TargetType="ListViewItem" BasedOn="{StaticResource MahApps.Styles.ListViewItem}">
+                <Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.Text}"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+            </Style>
+            <Style TargetType="TextBox" BasedOn="{StaticResource MahApps.Styles.TextBox}">
+                <Setter Property="Margin" Value="2"/>
+            </Style>
             <Style TargetType="UserControl">
-                <Setter Property="TextElement.Foreground" Value="{DynamicResource MaterialDesignBody}" />
-            </Style>-->
+                <Setter Property="Background" Value="{DynamicResource MahApps.Brushes.ThemeBackground}"/>
+            </Style>
+            <!--AI 作ここまで-->
 
 
             <DataTemplate DataType="{x:Type vm:AssetListViewModel}">
@@ -38,6 +50,10 @@
 
             <DataTemplate DataType="{x:Type vm:FavoriteListViewModel}">
                 <views:FavoriteListView/>
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:AssetInformationViewModel}">
+                <views:AssetInformationView/>
             </DataTemplate>
 
             <!--右クリックメニュー用-->

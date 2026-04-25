@@ -29,12 +29,14 @@
         x:Name="AssetsList"
         ItemsSource="{Binding Assets, Mode=OneWay, NotifyOnTargetUpdated=True}"
         TargetUpdated="AssetsListTargetUpdated"
+        ScrollViewer.CanContentScroll="True"
         VirtualizingPanel.CacheLength="100"
-        VirtualizingPanel.CacheLengthUnit="Item"
-        >
+        VirtualizingPanel.CacheLengthUnit="Item">
         <!--CacheLengthUnit=Page はうまく動かない。ユーザーコントロール出してるから？安定して先読みできる Item に一旦変更。先読み数は WQHD でも画面内50枚程度なので、一旦その程度で-->
         <!--VirtualizingPanel.VirtualizationMode="Recycling">-->
-        <!--Recyclingは実装と相性が悪いのかわからないが、スクロースしてもスクロール先のサムネイル作成処理が走らない。一旦保留。OnIsVisibleChangedが発火して無いことを確認済み-->
+        <!--Recyclingは実装と相性が悪いのかわからないが、スクロースしてもスクロール先のサムネイル作成処理が走らない。一旦保留。OnIsVisibleChangedが発火して無いことを確認済み -->
+        <!--TODO: DataContextChanged で読み込み発火するようにすると解決する。どちらがいいかは後程検討-->
+        
         <!--ItemsSource="{Binding Assets, Mode=OneWay, NotifyOnTargetUpdated=True}"
         TargetUpdated="AssetsListTargetUpdated" でAssets が変わったタイミングでイベント発火させられる。
         最上までスクロールさせようと思ったが、IsVisibleChanged が発火しないので中断。-->
@@ -52,6 +54,13 @@
                 <Setter Property="ContextMenu" Value="{StaticResource AssetContextMenu}"/>
             </Style>
         </ListView.ItemContainerStyle>
+        <i:Interaction.Triggers>
+            <i:EventTrigger EventName="SelectionChanged">
+                <i:InvokeCommandAction 
+            Command="{Binding UpdateSelectionCommand}" 
+            CommandParameter="{Binding SelectedItems, ElementName=AssetsList}" />
+            </i:EventTrigger>
+        </i:Interaction.Triggers>
         <ListView.ItemsPanel>
             <ItemsPanelTemplate>
                 <vwp:VirtualizingWrapPanel/>
