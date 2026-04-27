@@ -13,9 +13,6 @@ using System.Windows.Shapes;
 
 namespace SkyWingViewer.Views
 {
-    /// <summary>
-    /// OtherAssetView.xaml の相互作用ロジック
-    /// </summary>
     public partial class OtherAssetView : UserControl
     {
         public OtherAssetView()

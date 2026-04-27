@@ -7,7 +7,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <StackPanel>
-        <Image Source="{Binding IconImage}"/>
-        <Label x:Name="FooterArea" Content="{Binding DirectoryName}"/>
+        <Image Source="{Binding Thumbnail}"/>
+        <ContentControl x:Name="FooterArea" Content="{Binding Footer}"/>
     </StackPanel>
 </UserControl>

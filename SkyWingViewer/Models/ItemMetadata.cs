@@ -9,22 +9,22 @@ namespace SkyWingViewer.Models;
 public class ItemMetadata
 {
     public string Name { get; set; }
-    public DateTime CreatonTime { get; set; }
-    public DateTime LastAccessTime { get; set; }
-    public DateTime LastModifiedTime{ get; set; }
+    public DateTime CreationFileTime { get; set; }
+    //public DateTime AccessTime { get; set; }
+    public DateTime ModifiedTime{ get; set; }
 
     public long? Length { get; set; }
 
     //以下は未実装
-    public int rate { get; set; }
-    public List<String> Tags;
+    //public int rate { get; set; }
+    //public List<String> Tags;
 
     public ItemMetadata(FileSystemInfo fileSystemInfo)
     {
-        Name = fileSystemInfo.Name; 
-        CreatonTime = fileSystemInfo.CreationTime;
-        LastAccessTime = fileSystemInfo.LastAccessTime;
-        LastModifiedTime = fileSystemInfo.LastWriteTime;
+        Name = fileSystemInfo.Name;
+        CreationFileTime = fileSystemInfo.CreationTime;
+        //AccessTime = fileSystemInfo.LastAccessTime;
+        ModifiedTime = fileSystemInfo.LastWriteTime;
 
         if(fileSystemInfo is FileInfo fileInfo)
         {
@@ -39,7 +39,7 @@ public class ItemMetadata
     //public ItemMetadata(string name, DateTime creationTime, DateTime lastAccessTime, DateTime lastModifiedTime, long? length = null)
     //{
     //    Name = name;
-    //    CreatonTime = creationTime;
+    //    CreationFileTime = creationTime;
     //    LastAccessTime = lastAccessTime;
     //    LastModifiedTime = lastModifiedTime;
     //    Length = length;

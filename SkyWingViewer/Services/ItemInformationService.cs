@@ -10,6 +10,8 @@ using SkyWingViewer.Models;
 
 namespace SkyWingViewer.Services;
 
+
+//TODO: VM に書くべき内容が大量なので、リファクタリングすること。ConvertItemMetadataToItemInformations は ItemInformation クラスに IEnumerable を利用したメソッドに直しつつ移動で良いかと
 public partial class ItemInformationService : ObservableObject
 {
 
@@ -62,10 +64,10 @@ public partial class ItemInformationService : ObservableObject
     {
         List<ItemInformation> list = new();
         list.Add(new ItemInformation("名前", itemMetadata.Name));
-        list.Add(new ItemInformation("作成日時", itemMetadata.CreatonTime.ToString("yyyy年MM月dd日 HH:mm:ss")));
+        list.Add(new ItemInformation("作成日時", itemMetadata.CreationFileTime.ToString("yyyy年MM月dd日 HH:mm:ss")));
         //いらないと思うのと、ラベルの長さがこれがボトルネックになるので一旦非表示に
         //list.Add(new ItemInformation("最終アクセス日時", itemMetadata.LastAccessTime.ToString("yyyy年MM月dd日 HH:mm:ss")));
-        list.Add(new ItemInformation("最終更新日時", itemMetadata.LastModifiedTime.ToString("yyyy年MM月dd日 HH:mm:ss")));
+        list.Add(new ItemInformation("最終更新日時", itemMetadata.ModifiedTime.ToString("yyyy年MM月dd日 HH:mm:ss")));
 
         if (itemMetadata == null)
         {

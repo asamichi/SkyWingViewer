@@ -15,7 +15,7 @@ using System.Windows.Media.Imaging;
 namespace SkyWingViewer.ViewModels;
 
 //TODO: とりあえず表示という形で全て暫定処理。
-public partial class OtherAssetViewModel : AssetViewModelBase
+public partial class OtherAssetViewModel : AssetViewModelBase<OtherAsset>
 {
 
     [ObservableProperty]
@@ -50,6 +50,7 @@ public partial class OtherAssetViewModel : AssetViewModelBase
         {
             try
             {
+
                 using (var shellFile = ShellFile.FromFilePath(_asset.AssetPath))
                 {
                     BitmapSource bitmap = shellFile.Thumbnail.BitmapSource;

@@ -26,7 +26,7 @@ public interface IItemInformationProvider
     {
         List<ItemInformation> list = new();
         list.Add(new ItemInformation("名前", itemMetadata.Name));
-        list.Add(new ItemInformation("作成日時", itemMetadata.CreatonTime.ToString("yyyy年MM月dd日 HH:mm:ss")));
+        list.Add(new ItemInformation("作成日時", itemMetadata.CreationFileTime.ToString("yyyy年MM月dd日 HH:mm:ss")));
         list.Add(new ItemInformation("最終アクセス日時", itemMetadata.LastAccessTime.ToString("yyyy年MM月dd日 HH:mm:ss")));
         list.Add(new ItemInformation("最終更新日時", itemMetadata.LastAccessTime.ToString("yyyy年MM月dd日 HH:mm:ss")));
 

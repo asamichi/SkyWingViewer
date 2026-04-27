@@ -13,7 +13,7 @@ using System.IO;
 
 namespace SkyWingViewer.ViewModels;
 
-public partial class ImageAssetViewModel : AssetViewModelBase
+public partial class ImageAssetViewModel : AssetViewModelBase<ImageAsset>
 {
 
     [ObservableProperty]
@@ -52,27 +52,25 @@ public partial class ImageAssetViewModel : AssetViewModelBase
         //Thumbnail = await Task.Run(() => ts.getImageCache(_asset.AssetPath));
         //Thumbnail = ts.getImageCache(_asset.AssetPath);
 
-        //ImageAsset 型なのは確定だが、エディタに対して明示
-        if (_asset is ImageAsset imageAsset)
+
+        _logger.LogTrace("サムネイルの作成リクエストを実施します。Path: {Path}", _asset.AssetPath);
+        ThumbnailRequest thumbnailRequest = new ThumbnailRequest(_asset,async (result) =>
         {
-            _logger.LogTrace("サムネイルの作成リクエストを実施します。Path: {Path}", _asset.AssetPath);
-            ThumbnailRequest thumbnailRequest = new ThumbnailRequest(imageAsset,async (result) =>
+            if(this._isVisible == 0)
             {
-                if(this._isVisible == 0)
-                {
-                    _logger.LogTrace("既に必要のないサムネイルのため、値を格納しません。Path: {Path}", _asset.AssetPath);
-                    return;
-                }
-                this.Thumbnail = result;
-            }, _cancellationToken);
-            await thumbnailService.AddQueueAsync(thumbnailRequest);
-        }
+                _logger.LogTrace("既に必要のないサムネイルのため、値を格納しません。Path: {Path}", _asset.AssetPath);
+                return;
+            }
+            this.Thumbnail = result;
+        }, _cancellationToken);
+        await thumbnailService.AddQueueAsync(thumbnailRequest);
+
 
         _isLoading = 0;
     }
 
     //TODO: 本当はVM側でキャンセルトークンソースを受け取って、子トークンをサムネイルサービスに渡してそれをキャンセルする仕組みにするべき
-    public async void UnloadThumbnail()
+    public void UnloadThumbnail()
     {
         _logger.LogTrace("サムネイルを解放します。Path: {Path}", _asset.AssetPath);
         _isVisible = 0;

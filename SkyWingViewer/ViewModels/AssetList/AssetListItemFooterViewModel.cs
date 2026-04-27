@@ -12,8 +12,9 @@ public partial class AssetListItemFooterViewModel : ObservableObject
     [ObservableProperty]
     private string targetName;
 
-    public AssetListItemFooterViewModel (AssetBase asset)
+    public AssetListItemFooterViewModel (FileSystemItemBase item)
     {
-        targetName = Path.GetFileName(asset.AssetPath);
+        //フォルダ名もこれでOK
+        targetName = Path.GetFileName(item.Path);
     }
 }

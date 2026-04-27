@@ -55,6 +55,7 @@ public partial class AssetListView : UserControl
     }
     /* ***** ターゲット変更時にスクロール位置を先頭に戻す ここまで ***** */
 
+    //TODO: i:EventTrigger で実装すればコードビハインドに書かなくていいのでそのように
     private void ListViewItemMouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         //IOpenCommand を実装しているなら

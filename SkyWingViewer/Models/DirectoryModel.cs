@@ -6,18 +6,12 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace SkyWingViewer.Models;
 
-public class DirectoryModel
+
+public class DirectoryModel : FileSystemItemBase
 {
-    public string Path { get; set; }
-    public string Name => System.IO.Path.GetFileName(Path);
-
-    public ItemMetadata Metadata { get; set; }
-
-    public DirectoryModel(string path)
+    public DirectoryModel(string path) : base(path)
     {
-        Path = path;
-        FileSystemInfo fileSystemInfo = new DirectoryInfo(path);
-        Metadata = new ItemMetadata(fileSystemInfo);
+
     }
 
 }

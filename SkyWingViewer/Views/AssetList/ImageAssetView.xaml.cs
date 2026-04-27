@@ -25,6 +25,7 @@ namespace SkyWingViewer.Views
             InitializeComponent();
         }
 
+        //TODO: どこかのタイミングで VirtualizingPanel.VirtualizationMode="Recycling"に移行するので、その際に合わせて DataContextChanged に移行する。その際はなるべく VM を呼び出すだけにして、最小限のロジックだけ書くようにすること
         private async void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             if (this.DataContext is ImageAssetViewModel vm)

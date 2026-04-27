@@ -14,15 +14,12 @@ using System.Windows.Media;
 
 namespace SkyWingViewer.ViewModels;
 
-//TODO: Bitmap を使用してサムネイルを作成して読み込むようにすること
-//TODO: サムネイルは一定の規則に応じて保存して、サムネイルが無いかチェックする処理を追加すること
-//TODO: 画像以外のものについては、対応するアイコンなどを用意して表示するようにする
 //TODO: 非同期処理にしてファイル数が多いディレクトリでも操作感が悪くならないようにすること
 
 public partial class AssetListViewModel : ObservableObject
 {
 
-
+    //<Object> は多分回避できるはず。
     //ディレクトリ内の各アセットを格納
     [ObservableProperty]
     private ObservableCollection<Object> assets = new();
@@ -75,7 +72,7 @@ public partial class AssetListViewModel : ObservableObject
         foreach (var directorys in Directory.EnumerateDirectories(directoryPath))
         {
             DirectoryModel model = new DirectoryModel(directorys);
-            DirectoryViewModel? directoryViewModel = _vmFactory.Create(model, directoryCTS);
+            DirectoryViewModel? directoryViewModel = (DirectoryViewModel?)_vmFactory.Create(model, directoryCTS);
             if(directoryViewModel != null)
             {
                 Assets.Add(directoryViewModel);

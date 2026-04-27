@@ -16,6 +16,8 @@ namespace SkyWingViewer.Services;
 
 
 //WILL: OpenCvSharp3 による縮小でサムネイル画質や速度面で改善があるか試す。https://koshian2.hatenablog.jp/entry/2017/11/23/212813
+
+//TODO: 重いディスクアクセスを管理するサービスを別途作成すること。ディスクサービス側は常にディスクIOに専念、読み終わったらたむネイルサービスに渡すことで、なるべくシーケンシャルかつディスクの性能を使い切ることを目指す
 public class ThumbnailRequest
 {
     public ImageAsset Asset { get; init; }
@@ -209,6 +211,7 @@ public class ThumbnailService : BackgroundService
         {
             CreateThumbnailFile(path, thumbnailPath);
         }
+        //TODO: 現状必ずディスクのサムネイルを読んでいるが、作成した場合はそれを直接返すほうがディスクIOの節約になる
         //この時点では必ずサムネイルファイルはあるので、それを読んで返す
         return CreateBitmapImage(thumbnailPath);
 
@@ -220,7 +223,6 @@ public class ThumbnailService : BackgroundService
 
 
     //サムネイルファイルを読み込んで、メモリに載せて返す。サムネイルファイルは軽量なので、ディスク負荷も軽微な想定。
-    //TODO: 呼び出し元でそもそもしっかりするべきだが、一応 path 先の null チェック追加。
     private BitmapImage CreateBitmapImage(string thumbnailPath)
     {
         BitmapImage bitmapImage = new();
@@ -242,6 +244,7 @@ public class ThumbnailService : BackgroundService
 
 
     //サムネイルファイルを作成して保存する
+    //TODO: 読み込み、加工、保存はそれぞれ異なるメソッドに分離、内容を切り替えられるようにすること。
     private void CreateThumbnailFile(string filePath,string outputPath)
     {
         ImageSize currentThumbnailSize = CurrentThumbnailSize;//実体コピー。処理中にサムネイルサイズの指定が変わってもこの回での整合性は保たれる

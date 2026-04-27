@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 using System.IO;
-
+using static System.IO.Path;
 using System.Diagnostics;
 
 namespace SkyWingViewer.Models;
@@ -38,7 +38,7 @@ public static class AssetFactory
 }
 
 //全ファイル共通の基底クラス
-public abstract class AssetBase
+public abstract class AssetBase : FileSystemItemBase
 {
     //アセットの種類一覧
     public enum AssetTypes
@@ -47,27 +47,20 @@ public abstract class AssetBase
         Other
     }
     //パス。基底クラスの Path と連動。
-    public string AssetPath { get; set; }
+    public string AssetPath {
+        get => Path;
+        set => Path = value;
+    }
 
     //アセットの種類
     public AssetTypes AssetType { get; set; }
 
     //拡張子
-    public string Extension => Path.GetExtension(AssetPath).ToLower();
+    public string Extension => GetExtension(AssetPath).ToLower();
 
-    //メタデータ
-    public ItemMetadata Metadata { get; set; }
-
-
-    //TODO: メタデータを追加する
-    public AssetBase(string assetPath, AssetTypes assetType)
+    public AssetBase(string assetPath, AssetTypes assetType) : base(assetPath)
     {
-        AssetPath = assetPath;
         AssetType = assetType;
-
-        //メタデータの取得
-        FileInfo fileInfo = new FileInfo(AssetPath);
-        Metadata = new ItemMetadata(fileInfo);
 
     }
 
@@ -108,7 +101,7 @@ public class ImageAsset : AssetBase, IAssetBase
     //使わないかも
     public static bool IsImageAsset(string path)
     {
-        string extension = Path.GetExtension(path).ToLower();
+        string extension = GetExtension(path).ToLower();
         return ImageExtensions.Contains(extension);
     }
 
