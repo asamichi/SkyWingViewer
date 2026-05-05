@@ -19,11 +19,16 @@ using System.Windows.Threading;
 
 namespace SkyWingViewer;
 
+//TODO: 文字入力系について、Enter かフォーカス外れたら発火するようにする。
 class Program
 {
     [STAThread]
     static void Main(string[] args)
     {
+
+        //諸々終わったらアプリケーション起動
+        var app = new App();
+        app.InitializeComponent();
 
         /* *************** Host の設定～起動 ************** */
         HostApplicationBuilder builder = Host.CreateApplicationBuilder();
@@ -70,12 +75,19 @@ class Program
         //ターゲットディレクトリのパス
         builder.Services.AddSingleton<TargetNavigationService>();
 
+        builder.Services.AddSingleton<ItemSearchService>();
+        builder.Services.AddSingleton<ItemSortService>();
+
+        //メイン画面のアセット一覧管理
+        builder.Services.AddSingleton<AssetListService>();
+
         //サムネイル関係
         builder.Services.AddSingleton<ThumbnailService>();
         builder.Services.AddHostedService<ThumbnailService>(sp=> sp.GetRequiredService<ThumbnailService>());
 
         //サムネイル関係(拡張子追加)
         builder.Services.AddSingleton<IThumbnailProvider, ClipStudioThumbnailLoader>();
+
 
         //設定
         builder.Services.AddSingleton<AppSettings>(sp =>
@@ -98,8 +110,11 @@ class Program
         //画面というか領域
         builder.Services.AddTransient<AssetListViewModel>();
         builder.Services.AddTransient<TargetPathBarViewModel>();
+        builder.Services.AddTransient<SearchBarViewModel>();
         builder.Services.AddTransient<FavoriteListViewModel>();
         builder.Services.AddTransient<AssetInformationViewModel>();
+        builder.Services.AddTransient<HeaderAreaViewModel>();
+        builder.Services.AddTransient<SortAreaViewModel>();
 
         //一覧の単体
         builder.Services.AddTransient<ImageAssetViewModel>();
@@ -122,12 +137,16 @@ class Program
 
         //vm 作成
         var assetListViewModel = host.Services.GetRequiredService<AssetListViewModel>();
-        var targetPathBarViewModel = host.Services.GetRequiredService<TargetPathBarViewModel>();
+        //var targetPathBarViewModel = host.Services.GetRequiredService<TargetPathBarViewModel>();
+        var headerAreaViewModel = host.Services.GetRequiredService<HeaderAreaViewModel>();
+
+
+
         var favoriteListViewModel = host.Services.GetRequiredService<FavoriteListViewModel>();
         var assetInformationViewModel = host.Services.GetRequiredService<AssetInformationViewModel>();
 
         mainWindow.MainArea.DataContext = assetListViewModel;
-        mainWindow.ToolBar.DataContext = targetPathBarViewModel;
+        mainWindow.ToolBar.DataContext = headerAreaViewModel;
         mainWindow.TreeMenu.DataContext = favoriteListViewModel;
         mainWindow.SubArea.DataContext = assetInformationViewModel;
 
@@ -142,9 +161,7 @@ class Program
         host.StartAsync().GetAwaiter().GetResult(); //サービスの起動について await 、起動が完了したら進む
 
 
-        //諸々終わったらアプリケーション起動
-        var app = new App();
-        app.InitializeComponent();
+
 
         app.Run(mainWindow); // アプリ起動中はこの行で止まる
 

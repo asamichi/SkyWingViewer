@@ -64,7 +64,6 @@ public partial class AssetListView : UserControl
             vm.OpenCommand.Execute(null);
         }
     }
-
 }
 
 

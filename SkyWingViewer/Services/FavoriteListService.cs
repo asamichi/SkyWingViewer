@@ -20,7 +20,7 @@ public class FavoriteListService
     readonly AppSettings _appSettings;
     readonly JsonStorage<AppSettings> _storage;
 
-    public ObservableCollection<DirectoryModel> FavoriteList => _favoriteListSettings.FavoriteList;
+    public ObservableCollection<FavoriteModel> FavoriteList => _favoriteListSettings.FavoriteList;
 
 
 
@@ -44,15 +44,15 @@ public class FavoriteListService
         }
 
         _logger.LogInformation("お気に入りに追加します。Path: {path}", path);
-        DirectoryModel directoryModel = new(path);
-        //directoryModel.SetPath(path);
+        FavoriteModel favoriteModel = new(path);
         
-        FavoriteList.Add(directoryModel);
+        //TODO: FavoliteModel を作成。ディレクトリは Metadata 持つようになったので Json で扱えない
+        FavoriteList.Add(favoriteModel);
         _storage.SaveJson(_appSettings);
     }
 
 
-    public void RemoveFavoriteList(DirectoryModel target)
+    public void RemoveFavoriteList(FavoriteModel target)
     {
         if (target == null) return;
 

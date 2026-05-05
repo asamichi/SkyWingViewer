@@ -6,10 +6,14 @@ using SkyWingViewer.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Media;
 
 namespace SkyWingViewer.ViewModels;
@@ -19,10 +23,11 @@ namespace SkyWingViewer.ViewModels;
 public partial class AssetListViewModel : ObservableObject
 {
 
-    //<Object> は多分回避できるはず。
     //ディレクトリ内の各アセットを格納
     [ObservableProperty]
-    private ObservableCollection<Object> assets = new();
+    private ObservableCollection<FileSystemItemViewModelBase> assets;
+
+    public ListCollectionView AssetsView { get; set; }
 
     //VM のファクトリー
     public AssetListViewModelFactory _vmFactory;
@@ -31,85 +36,173 @@ public partial class AssetListViewModel : ObservableObject
     public CancellationTokenSource? directoryCTS = null;
 
     //表示中のディレクトリ対象管理
+    //現時点では TargetPath 自体は処理に使っていないが、ターゲットパス変更時にスクロールを一番上に戻すために必要
     private TargetNavigationService _targetNavigationService;
     [ObservableProperty]
-    public string? targetPath;
+    private string? targetPath;
 
     //詳細情報用のサービス等
     private ItemInformationService _itemInformationService;
 
-    public AssetListViewModel(TargetNavigationService targetNavigationService,AssetListViewModelFactory factory, ItemInformationService itemInformationService)
+    //表示対象のモデル管理
+    private AssetListService _assetListService;
+
+    //ListCollectionView の機能とどっちが良いか比較した結果、実装がシンプルなこちらを一旦採用
+    private ItemSearchService _itemSearchService;
+
+    //ソート。同上の理由でいったんこの方式で
+    private ItemSortService _itemSortService;
+
+    public AssetListViewModel(TargetNavigationService targetNavigationService,AssetListViewModelFactory factory, ItemInformationService itemInformationService, AssetListService assetListService,ItemSearchService itemSearchService,ItemSortService itemSortService)
     {
         _targetNavigationService = targetNavigationService;
         TargetPath = _targetNavigationService.Path;
         _vmFactory = factory;
         _itemInformationService = itemInformationService;
-        LoadDirectory(TargetPath);
+        _assetListService = assetListService;
+        _itemSearchService = itemSearchService;
+        _itemSortService = itemSortService;
+        Assets = new ObservableCollection<FileSystemItemViewModelBase>();
+        AssetsView = new ListCollectionView(Assets);
+
+        //LoadDirectory(TargetPath);
+        OnTargetPathChanged();
         //イベント登録
-        _targetNavigationService.TargetPathChanged += OnTargetPathChanged;
+        //_targetNavigationService.TargetPathChanged += OnTargetPathChanged;
+        _assetListService.TargetPathChanged += OnTargetPathChanged;
+        _assetListService.ItemsChanged += OnItemsChanged;
+        _itemSortService.SortKeyChanged += OnSortKeyChanged;
     }
 
 
-    //TODO: VM に書くのは少し微妙な内容な気もするが、切り出すべきかと言われると最小の処理しか今はしてない感じもする。将来太ってきたら別クラスへの切り出しを検討
-    //TODO: ファイル数膨大なディレクトリを開いて問題ありそうなら非同期にする等検討
+
     //ディレクトリ内の各アセットを Assets コレクションに追加 = ListView の ItemsSource に追加
-    public void LoadDirectory(string directoryPath)
+    public async Task LoadAssetsAsync()
     {
-        //初期化
-        //new しないと今の仕組みだと一番上までスクロールしない
-        //Assets.Clear();
-        Assets = new ObservableCollection<Object>();
-        if (directoryCTS != null)
-        {
-            directoryCTS.Cancel();
-            directoryCTS.Dispose();
-        }
-
-        //このディレクトリで利用する cst を作成
-        //WILL: キャンセルトークンの管理が複雑になったり何か困ったら、CommunityToolkit のメッセンジャーの利用を検討
+        Assets.Clear();
+        directoryCTS?.Cancel();
         directoryCTS = new();
+        CancellationToken token = directoryCTS.Token;
 
-        foreach (var directorys in Directory.EnumerateDirectories(directoryPath))
+        try
         {
-            DirectoryModel model = new DirectoryModel(directorys);
-            DirectoryViewModel? directoryViewModel = (DirectoryViewModel?)_vmFactory.Create(model, directoryCTS);
-            if(directoryViewModel != null)
+            await Task.Run(async () =>
             {
-                Assets.Add(directoryViewModel);
-            }
-        }
+                List<FileSystemItemViewModelBase> buffer = new List<FileSystemItemViewModelBase>();
+                //見た目の気持ちよさとディレクトリ移動直後等のレスポンスの良さを考え、始めは 1 件ずつ表示。見えないところまでいったら、効率化のためバッチサイズを大きくしてまとめて追加していくようにする。
+                int BatchSize = 100;
+                int TotalCnt = 0;
 
-        foreach (var filePath in Directory.EnumerateFiles(directoryPath))
+                foreach(var items in _assetListService.EnumerateLoadDirectory())
+                {
+                    if (token.IsCancellationRequested) break;
+                    var viewModel = _vmFactory.Create(items, directoryCTS);
+                    if (viewModel != null)
+                    {
+                        buffer.Add(viewModel);
+                    }
+
+                    if(buffer.Count > BatchSize)
+                    {
+                        await PushToAssetViewModelList(buffer, token);
+                        buffer.Clear();
+                    }
+                    TotalCnt++;
+
+                    if(TotalCnt > 100)
+                    {
+                        BatchSize = 1000;
+                    }
+                }
+                //まとめて処理する分の端数分
+                if (buffer.Count > 0 && !token.IsCancellationRequested)
+                {
+                    await PushToAssetViewModelList(buffer, token);
+                }
+
+            }, token);
+        }
+        catch (OperationCanceledException) {
+            //キャンセル時は何もしない
+        }
+    }
+
+    private async Task PushToAssetViewModelList(List<FileSystemItemViewModelBase> list,CancellationToken token)
+    {
+        if (list == null) return;
+        // リストのコピーを渡して、バックグラウンド側がすぐ次へ行けるようにする(LoadAssetsAsync では Clear してすぐ次に移りたい)
+        var copy = list.ToList();
+
+        //TODO: 実際の効果のほどはわかってない
+        //指定されているソートでリストを渡すことで、対象が多いフォルダに移動した時のソートによる入れかえが見えにくいように
+        bool isAscending = _itemSortService.SortKey.SortDescription.Direction == ListSortDirection.Ascending;
+
+        if (isAscending)
         {
-            var asset = AssetFactory.CreateAssetInstance(filePath);
-            var vm = _vmFactory.Create(asset, directoryCTS);
-            if (vm == null) continue;
-            Assets.Add(vm);
+            copy.OrderBy(vm => _itemSortService.SortKey.GetSortTarget(vm.Model));
+        }
+        else
+        {
+            copy.OrderByDescending(vm => _itemSortService.SortKey.GetSortTarget(vm.Model));
+
         }
 
+        //UI スレッドで実行する必要がある
+        await App.Current.Dispatcher.InvokeAsync(() =>
+        {
+            if (token.IsCancellationRequested) return;
 
+            foreach (var item in copy)
+            {
+                Assets.Add(item);
+            }
+        });
     }
 
     // TargetPath が変わった時の処理
-    private void OnTargetPathChanged()
+    private async void OnTargetPathChanged()
     {
         TargetPath = _targetNavigationService.Path;
+
         //新しいターゲットの内容に更新して表示する
-        LoadDirectory(TargetPath);
+        //LoadDirectory(TargetPath);
+        await LoadAssetsAsync();
     }
 
-    //
+    //検索対象が変わったら読み込みしなおす
+    private async void OnItemsChanged()
+    {
+        //await LoadAssetsAsync();
+        AssetsView.Filter = (obj =>
+        {
+            if (obj is FileSystemItemViewModelBase vm)
+            {
+                return _itemSearchService.IsTarget(vm.Model);
+            }
+            return true;
+        });
+
+        AssetsView.Refresh();
+    }
+
+    //ソートキーが変わったら、ソートする
+    private void OnSortKeyChanged()
+    {
+        AssetsView.SortDescriptions.Clear();
+
+        AssetsView.SortDescriptions.Add(_itemSortService.SortKey.SortDescription);
+    }
+
+    //選択対象に応じた詳細を表示するよう、詳細表示サービスに対象を伝える
     [RelayCommand]
     public void UpdateSelection(object parameter)
     {
-
         List<IItemInformationProvider>? list = null;
         if (parameter is System.Collections.IList parameterList)
         {
             list = parameterList.OfType<IItemInformationProvider>().ToList();
         }
         _itemInformationService.TargetItems = list;
-
     }
 
 }

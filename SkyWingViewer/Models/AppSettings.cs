@@ -18,6 +18,6 @@ public class AppSettings : JsonStorageSettingBase
 
 public class FavoriteListSettings
 {
-    public ObservableCollection<DirectoryModel> FavoriteList { get; set; } = new();
+    public ObservableCollection<FavoriteModel> FavoriteList { get; set; } = new();
 
 }

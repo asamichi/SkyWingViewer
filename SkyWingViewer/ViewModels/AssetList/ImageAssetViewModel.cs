@@ -16,6 +16,11 @@ namespace SkyWingViewer.ViewModels;
 public partial class ImageAssetViewModel : AssetViewModelBase<ImageAsset>
 {
 
+    //このインスタンスをデータコンテキストとしている View の数
+    //折り返し部分などで、自分にとっては _lastVM だが、別の View が今まさに表示しているという場合があることへの対策。 == 0 の時のみサムネイルを解放
+
+    public int ViewCount { get; set; } = 0;
+
     [ObservableProperty]
     private BitmapSource? thumbnail;
 
@@ -26,6 +31,7 @@ public partial class ImageAssetViewModel : AssetViewModelBase<ImageAsset>
     private ILogger _logger;
 
     public CancellationToken _cancellationToken;
+    public CancellationTokenSource _childCancellationTokenSource;
 
 
     public ImageAssetViewModel(ImageAsset imageAsset,ThumbnailService ts,ILogger<ImageAssetViewModel> logger,CancellationToken ct) : base(imageAsset)
@@ -53,6 +59,8 @@ public partial class ImageAssetViewModel : AssetViewModelBase<ImageAsset>
         //Thumbnail = ts.getImageCache(_asset.AssetPath);
 
 
+        var _childCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationToken);
+
         _logger.LogTrace("サムネイルの作成リクエストを実施します。Path: {Path}", _asset.AssetPath);
         ThumbnailRequest thumbnailRequest = new ThumbnailRequest(_asset,async (result) =>
         {
@@ -62,7 +70,7 @@ public partial class ImageAssetViewModel : AssetViewModelBase<ImageAsset>
                 return;
             }
             this.Thumbnail = result;
-        }, _cancellationToken);
+        }, _childCancellationTokenSource.Token);
         await thumbnailService.AddQueueAsync(thumbnailRequest);
 
 
@@ -72,9 +80,13 @@ public partial class ImageAssetViewModel : AssetViewModelBase<ImageAsset>
     //TODO: 本当はVM側でキャンセルトークンソースを受け取って、子トークンをサムネイルサービスに渡してそれをキャンセルする仕組みにするべき
     public void UnloadThumbnail()
     {
+
         _logger.LogTrace("サムネイルを解放します。Path: {Path}", _asset.AssetPath);
         _isVisible = 0;
         Thumbnail = null;
+
+        _childCancellationTokenSource?.Cancel();
+        _childCancellationTokenSource?.Dispose();
     }
 
 

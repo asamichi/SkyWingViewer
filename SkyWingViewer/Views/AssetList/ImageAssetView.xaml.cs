@@ -25,42 +25,74 @@ namespace SkyWingViewer.Views
             InitializeComponent();
         }
 
-        //TODO: どこかのタイミングで VirtualizingPanel.VirtualizationMode="Recycling"に移行するので、その際に合わせて DataContextChanged に移行する。その際はなるべく VM を呼び出すだけにして、最小限のロジックだけ書くようにすること
-        private async void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        //データコンテキスト切り替え時、以前の VM を掃除するために保持する。
+        private ImageAssetViewModel? _lastVM;
+
+        //private async void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        //{
+        //    if (this.DataContext is ImageAssetViewModel vm)
+        //    {
+        //        //イベント発火テスト用
+        //        //vm.test1();
+        //        /*
+        //        DependencyPropertyChangedEventArgs.NewValue プロパティ (System.Windows) | Microsoft Learn
+        //        https://learn.microsoft.com/ja-jp/dotnet/api/system.windows.dependencypropertychangedeventargs.newvalue?view=windowsdesktop-10.0
+        //        UIElement.IsVisible Property (System.Windows) | Microsoft Learn
+        //        https://learn.microsoft.com/ja-jp/dotnet/api/system.windows.uielement.isvisible?view=windowsdesktop-9.0                
+        //        */
+        //        bool isVisible = (bool)e.NewValue;
+
+        //        if (isVisible == true)
+        //        {
+        //            //サムネイルが読み込まれているならもう Load する必要は無いので return する
+        //            if (vm.Thumbnail != null)
+        //            {
+        //                return;
+        //            }
+
+        //            await vm.LoadThumbnail();
+
+        //        }
+        //        else
+        //        {
+        //            //TODO: サムネイルメモリに乗りすぎて問題になりそうなら、ここに必要に応じて解放するような処理を入れる
+        //            //サムネイルがすでに無いならアンロードする必要はない
+        //            vm.UnloadThumbnail();
+        //        }
+
+        //    }
+        //}
+
+
+        private async void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if (this.DataContext is ImageAssetViewModel vm)
+            //OldValue に以前の ViewModel は入ってない模様。原因不明。
+            //OldValue には MS.Internal.NamedObject が入ってた
+
+            //if (e.OldValue is ImageAssetViewModel oldVM)
+            //{
+            //    Debug.WriteLine("解放");
+            //    oldVM.UnloadThumbnail();
+
+            //}
+
+            
+
+            if (_lastVM != null)
             {
-                //イベント発火テスト用
-                //vm.test1();
-                /*
-                DependencyPropertyChangedEventArgs.NewValue プロパティ (System.Windows) | Microsoft Learn
-                https://learn.microsoft.com/ja-jp/dotnet/api/system.windows.dependencypropertychangedeventargs.newvalue?view=windowsdesktop-10.0
-                UIElement.IsVisible Property (System.Windows) | Microsoft Learn
-                https://learn.microsoft.com/ja-jp/dotnet/api/system.windows.uielement.isvisible?view=windowsdesktop-9.0                
-                */
-                bool isVisible = (bool)e.NewValue;
-
-                if (isVisible == true)
-                {
-                    //サムネイルが読み込まれているならもう Load する必要は無いので return する
-                    if (vm.Thumbnail != null)
-                    {
-                        return;
-                    }
-
-                    await vm.LoadThumbnail();
-
-                }
-                else
-                {
-                    //TODO: サムネイルメモリに乗りすぎて問題になりそうなら、ここに必要に応じて解放するような処理を入れる
-                    //サムネイルがすでに無いならアンロードする必要はない
-                    vm.UnloadThumbnail();
-                }
-
+                _lastVM.ViewCount--;
+                if(_lastVM.ViewCount == 0)
+                _lastVM.UnloadThumbnail();
             }
-        }
 
+            if (e.NewValue is ImageAssetViewModel newVM)
+            {
+                _lastVM = newVM;
+                newVM.ViewCount++;
+                await newVM.LoadThumbnail();
+            }
+
+        }
 
 
 

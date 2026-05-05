@@ -12,7 +12,7 @@ namespace SkyWingViewer.ViewModels;
 public partial class AssetInformationViewModel : ObservableObject
 {
     [ObservableProperty]
-    private ObservableCollection<ItemInformation> informationItem;
+    private ObservableCollection<ItemInformation>? informationItem;
 
     private ItemInformationService _itemInformationService;
 

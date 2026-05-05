@@ -4,6 +4,7 @@
              xmlns:local="clr-namespace:SkyWingViewer"
              xmlns:vm="clr-namespace:SkyWingViewer.ViewModels"
              xmlns:views="clr-namespace:SkyWingViewer.Views"
+             xmlns:ic="clr-namespace:FluentIcons.Wpf;assembly=FluentIcons.Wpf"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
     <Application.Resources>
         <!--AI 作ここから-->
@@ -22,6 +23,7 @@
                 <Setter Property="BorderThickness" Value="0"/>
             </Style>
 
+
             <Style TargetType="ListViewItem" BasedOn="{StaticResource MahApps.Styles.ListViewItem}">
                 <Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.Text}"/>
                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -35,13 +37,24 @@
             </Style>
             <!--AI 作ここまで-->
 
+            <DataTemplate DataType="{x:Type vm:HeaderAreaViewModel}">
+                <views:HeaderArea/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:TargetPathBarViewModel}">
+                <views:TargetPathBarView/>
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:SearchBarViewModel}">
+                <views:SearchBarView/>
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:SortAreaViewModel}">
+                <views:SortAreaView/>
+            </DataTemplate>
+
 
             <DataTemplate DataType="{x:Type vm:AssetListViewModel}">
                 <views:AssetListView/>
-            </DataTemplate>
-
-            <DataTemplate DataType="{x:Type vm:TargetPathBarViewModel}">
-                <views:TargetPathBarView/>
             </DataTemplate>
 
             <DataTemplate DataType="{x:Type vm:AssetListItemFooterViewModel}">
@@ -55,6 +68,12 @@
             <DataTemplate DataType="{x:Type vm:AssetInformationViewModel}">
                 <views:AssetInformationView/>
             </DataTemplate>
+
+
+            <!--<DataTemplate DataType="{x:Type vm:EmptyViewModel}">
+                <views:EmptyView/>
+            </DataTemplate>-->
+
 
             <!--右クリックメニュー用-->
             <!--参考：https://gist.github.com/pinzolo/3103668-->

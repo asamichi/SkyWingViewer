@@ -6,7 +6,10 @@
              xmlns:local="clr-namespace:SkyWingViewer.Views"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
-             IsVisibleChanged="OnIsVisibleChanged">
+             DataContextChanged="OnDataContextChanged"
+             >
+    <!--IsVisibleChanged="OnIsVisibleChanged"-->
+    <!--DataContextChanged="OnDataContextChanged"-->
     <!--Loaded="OnLoaded">-->
     <!--このコントロールが表示された時、OnIsVisibleChanged が発火する-->
     <StackPanel>

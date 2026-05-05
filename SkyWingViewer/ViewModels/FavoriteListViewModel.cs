@@ -17,10 +17,7 @@ namespace SkyWingViewer.ViewModels;
 public partial class FavoriteListViewModel : ObservableObject,IContextMenu,IOpenCommand
 {
     [ObservableProperty]
-    private ObservableCollection<DirectoryModel> favoriteList;
-    [ObservableProperty]
-    private DirectoryModel? selectedFavorite;
-
+    private ObservableCollection<FavoriteModel> favoriteList;
 
     private FavoriteListService _favoriteListService;
     private TargetNavigationService _targetNavigationService;
@@ -45,7 +42,7 @@ public partial class FavoriteListViewModel : ObservableObject,IContextMenu,IOpen
     }
 
     [RelayCommand]
-    public void FavoriteOpen(DirectoryModel? value)
+    public void FavoriteOpen(FavoriteModel? value)
     {
         if (value == null) return;
 
@@ -68,7 +65,7 @@ public partial class FavoriteListViewModel : ObservableObject,IContextMenu,IOpen
         return list;
     }
     [RelayCommand]
-    public void RemoveFavorite(DirectoryModel? target)
+    public void RemoveFavorite(FavoriteModel? target)
     {
         if (target == null) return;
         _favoriteListService.RemoveFavoriteList(target);

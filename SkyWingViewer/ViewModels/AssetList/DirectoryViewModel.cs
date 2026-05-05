@@ -64,7 +64,7 @@ public partial class DirectoryViewModel : FileSystemItemViewModelBase<DirectoryM
             }
             catch (Exception ex)
             {
-                _logger.LogInformation("LoadThumbnail にてエラーが発生しました : {ex}", ex);
+                _logger.LogInformation("GetIconAsync にてエラーが発生しました : {ex}", ex);
                 //TODO:  エラー時はデフォルトアイコンなりを返す
                 return null;
             }

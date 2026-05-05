@@ -28,11 +28,11 @@ public partial class FavoriteListView : UserControl
     //TODO: Microsoft.Xaml.Behaviors.Wpf でコードビハインド無しできれいにできそうなので余裕ができたら改造
     private void ListViewItemMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        //sender が ListViewItem で、持っているデータが DirectoryModel なら target に格納。また、ListViewItem 自体は item として格納
-        if (sender is ListViewItem { DataContext: DirectoryModel target } item )
+        //sender が ListViewItem で、持っているデータが FavoriteModel なら target に格納。また、ListViewItem 自体は item として格納
+        if (sender is ListViewItem { DataContext: FavoriteModel target } item )
         {
             //親コントロール（item の親、つまりリスト自体）のデータコンテキストが IOpenCommand を持っているなら取得
-            IOpenCommand viewModel = ItemsControl.ItemsControlFromItemContainer(item)?.DataContext as IOpenCommand;
+            IOpenCommand? viewModel = ItemsControl.ItemsControlFromItemContainer(item).DataContext as IOpenCommand;
 
             if (viewModel == null) return;
             viewModel.OpenCommand.Execute(target);

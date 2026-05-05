@@ -27,16 +27,17 @@
     <!--暫定で、とりあえず2ページ分くらい先読みしておく(CacheXXX の設定)-->
     <ListView
         x:Name="AssetsList"
-        ItemsSource="{Binding Assets, Mode=OneWay, NotifyOnTargetUpdated=True}"
+        ItemsSource="{Binding AssetsView, Mode=OneWay, NotifyOnTargetUpdated=True}"
+        Tag="{Binding TargetPath, NotifyOnTargetUpdated=True}"
         TargetUpdated="AssetsListTargetUpdated"
+        VirtualizingPanel.VirtualizationMode="Recycling"
         ScrollViewer.CanContentScroll="True"
-        VirtualizingPanel.CacheLength="100"
+        VirtualizingPanel.CacheLength="50"
         VirtualizingPanel.CacheLengthUnit="Item">
+        <!--TODO: CacheLength もバインドできるので、動的に変更させるように変更。サムネイル作成要求が空になったら伸ばす感じで。始めは０にすることで、まず見えるところからできる。-->
+        <!--Tag は TargetPath が変わった時にスクロール位置を上に戻す処理を発火させるため-->
         <!--CacheLengthUnit=Page はうまく動かない。ユーザーコントロール出してるから？安定して先読みできる Item に一旦変更。先読み数は WQHD でも画面内50枚程度なので、一旦その程度で-->
-        <!--VirtualizingPanel.VirtualizationMode="Recycling">-->
-        <!--Recyclingは実装と相性が悪いのかわからないが、スクロースしてもスクロール先のサムネイル作成処理が走らない。一旦保留。OnIsVisibleChangedが発火して無いことを確認済み -->
-        <!--TODO: DataContextChanged で読み込み発火するようにすると解決する。どちらがいいかは後程検討-->
-        
+
         <!--ItemsSource="{Binding Assets, Mode=OneWay, NotifyOnTargetUpdated=True}"
         TargetUpdated="AssetsListTargetUpdated" でAssets が変わったタイミングでイベント発火させられる。
         最上までスクロールさせようと思ったが、IsVisibleChanged が発火しないので中断。-->

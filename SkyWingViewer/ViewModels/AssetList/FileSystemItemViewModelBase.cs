@@ -15,14 +15,18 @@ using System.IO;
 namespace SkyWingViewer.ViewModels;
 
 //この血統の返り値を持つメソッドの型のために必要。
-public partial class FileSystemItemViewModelBase : ObservableObject
-{
 
+public abstract partial class FileSystemItemViewModelBase : ObservableObject
+{
+    public abstract FileSystemItemBase Model { get; }
 }
+
 public partial class FileSystemItemViewModelBase<TModel> : FileSystemItemViewModelBase, IOpenCommand, IContextMenu, IItemInformationProvider where TModel : FileSystemItemBase
 {
     //対応するモデル
     protected TModel _model { get; private set; }
+    public override FileSystemItemBase Model => _model;
+
     public string ItemPath => _model.Path;
 
     //サムネイル

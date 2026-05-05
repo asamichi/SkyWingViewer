@@ -44,7 +44,7 @@
                                         <Setter Property="Command" Value="{Binding Command}"/>
                                         <!--パラメータとして渡すのは、右クリックメニュー項目の親をたどってコンテキストメニュー自体を基準として、
                                         右クリック操作の対象としている要素のデータコンテキスト
-                                        つまりここではお気に入りリストの中の１アイテムのデータコンテキスト -> DirectoryModel-->
+                                        つまりここではお気に入りリストの中の１アイテムのデータコンテキスト -> FavoriteModel-->
                                         <Setter Property="CommandParameter" 
                                         Value="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                     </Style>
