@@ -35,8 +35,10 @@
             <Style TargetType="UserControl">
                 <Setter Property="Background" Value="{DynamicResource MahApps.Brushes.ThemeBackground}"/>
             </Style>
+    
             <!--AI 作ここまで-->
 
+            <!--ヘッダー-->
             <DataTemplate DataType="{x:Type vm:HeaderAreaViewModel}">
                 <views:HeaderArea/>
             </DataTemplate>
@@ -52,23 +54,60 @@
                 <views:SortAreaView/>
             </DataTemplate>
 
+            <DataTemplate DataType="{x:Type vm:FilterButtonAreaViewModel}">
+                <views:FilterButtonAreaView/>
+            </DataTemplate>
 
+            <!--メイン-->
             <DataTemplate DataType="{x:Type vm:AssetListViewModel}">
                 <views:AssetListView/>
             </DataTemplate>
-
-            <DataTemplate DataType="{x:Type vm:AssetListItemFooterViewModel}">
-                <views:AssetListItemFooterView/>
+            
+            <!--左側-->
+            <DataTemplate DataType="{x:Type vm:SideMenuAreaViewModel}">
+                <views:SideMenuArea/>
             </DataTemplate>
-
             <DataTemplate DataType="{x:Type vm:FavoriteListViewModel}">
                 <views:FavoriteListView/>
             </DataTemplate>
+            
+            
+            <!--右側-->
 
+            <DataTemplate DataType="{x:Type vm:SubAreaViewModel}">
+                <views:SubAreaView/>
+            </DataTemplate>
+            
             <DataTemplate DataType="{x:Type vm:AssetInformationViewModel}">
                 <views:AssetInformationView/>
             </DataTemplate>
 
+            <DataTemplate DataType="{x:Type vm:InformationTagViewModel}">
+                <views:InformationTagView/>
+            </DataTemplate>
+            
+            <!--表示箇所でふるまいを変えたくなりそうなので都度 VM は指定する-->
+            <!--<DataTemplate DataType="{x:Type vm:StarRatingViewModel}">
+                <views:StarRatingView/>
+            </DataTemplate>-->
+
+            <!--フッター-->
+            <DataTemplate DataType="{x:Type vm:AssetListItemFooterViewModel}">
+                <views:AssetListItemFooterView/>
+            </DataTemplate>
+
+            <!--Pupup-->
+            <DataTemplate DataType="{x:Type vm:TagEditViewModel}">
+                <views:TagEditView/>
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:TagSearchViewModel}">
+                <views:TagSearchView/>
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:TagListViewModel}">
+                <views:TagListView/>
+            </DataTemplate>
 
             <!--<DataTemplate DataType="{x:Type vm:EmptyViewModel}">
                 <views:EmptyView/>
@@ -85,13 +124,24 @@
                 </ContextMenu.ItemsSource>
                 <ContextMenu.ItemContainerStyle>
                     <Style TargetType="MenuItem">
+
+                        <Setter Property="FontSize" Value="12"/>
+                        <!--縦幅を少し広げることで、選択をしやすくする-->
+                        <Setter Property="Padding" Value="0,5"/>
+
                         <!--Header はメニュー名のこと。それぞれ対応するパラメータをバインド-->
                         <Setter Property="Header"   Value="{Binding Name}"/>
                         <Setter Property="Command"  Value="{Binding Command}"/>
-                        <!--後半部分でバインディング対象を親を辿っていって最初に見つかる ContextMenu 型に指定して、
+                        <!--対象の VM インスタンスをパラメータとして取得。
+                        後半部分でバインディング対象を親を辿っていって最初に見つかる ContextMenu 型に指定して、
                         そのうえでそこから PlacementTarget(どこで（どのコントロールで、ViewList ならリストの中のどこのアイテムで）開かれたのか)を取得し、
                         そのデータコンテキストを指定-->
-                        <Setter Property="CommandParameter" Value="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                        <!--ContextMenuItem の CommandParameter に VM は渡っているはずだが、そもそも自分自身のメニューなので自分のメンバなどを参照で良かった。そのため結果的に無くても動いてる-->
+                        <!--<Setter Property="CommandParameter" Value="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>-->
+
+                        <!--もう一段派生するメニューなら、SubMenuItems をソースとしてさらに展開-->
+                        <Setter Property="ItemsSource" Value="{Binding SubMenuItems}"/>
+                        
                         <!-- セパレーター切り替え。 IsSeparator で分岐させる。 -->
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsSeparator}" Value="True">
@@ -107,6 +157,96 @@
                     </Style>
                 </ContextMenu.ItemContainerStyle>
             </ContextMenu>
+
+            
+            <!--チェックボックス形式のリストについて、チェック中の要素をハイライトしてわかりやすくする-->
+            <!--例：
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem" BasedOn="{StaticResource CheckBoxHighlightStyle}">-->
+            <Style x:Key="CheckBoxHighlightStyle" TargetType="ListBoxItem">
+                <Setter Property="Margin" Value="2,2"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <!--枠は少し丸みを持たせるのと、選択した領域が連続してもべた塗にならないように少し隙間を空ける-->
+                            <Border x:Name="Border"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="1"
+                                    CornerRadius="4" 
+                                    Padding="{TemplateBinding Padding}"
+                                    SnapsToDevicePixels="true">
+                                <ContentPresenter/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <!--チェックボックスだけだとぱっと見状況がわかりにくいので、チェック済みの項目は背景を着色する。-->
+                                <DataTrigger Binding="{Binding IsChecked}" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="#332196F3"/>
+                                    <Setter TargetName="Border" Property="BorderBrush" Value="#662196F3"/>
+                                </DataTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            
+            <!--AI: Mah の CheckBox に不具合があるので、スタイルはこちらで定義することに。AIに変更したくなりそうな箇所は指定しつつ作ってもらった。一部手動変更・追記-->
+            <Style TargetType="CheckBox">
+                <Setter Property="Foreground" Value="White"/>
+                <!-- テキストの色 -->
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <Grid Background="Transparent">
+                                <StackPanel Orientation="Horizontal">
+                                    <!-- 1. □ の形状と背景色・枠線の色 -->
+                                    <Border x:Name="Box" 
+                                Width="18" Height="18" 
+                                BorderThickness="1" 
+                                BorderBrush="#888888" 
+                                Background="#333333" 
+                                CornerRadius="3" 
+                                VerticalAlignment="Center">
+
+                                        <!-- 2. チェックマーク自体の色 -->
+                                        <Path x:Name="Mark" 
+                                  Data="M 3,8 L 7,12 L 14,3" 
+                                  Stroke="White" 
+                                  StrokeThickness="2" 
+                                  Visibility="Collapsed"/>
+                                    </Border>
+
+                                    <!-- テキスト -->
+                                    <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <ControlTemplate.Triggers>
+                                <!-- 3. チェック時の挙動 -->
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Mark" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="Box" Property="Background" Value="#119EDA"/>
+                                    <!-- チェック時の□の背景色 -->
+                                    <Setter TargetName="Box" Property="BorderBrush" Value="#119EDA"/>
+                                    <Setter TargetName="Mark" Property="Stroke" Value="White"/>
+                                    <!-- チェックマークの色 -->
+                                </Trigger>
+
+                                <!-- 4. マウスホバー時の色 -->
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <!-- ホバー時に白っぽくなるのを防ぎ、好きな色を指定 -->
+                                    <Setter TargetName="Box" Property="Background" Value="#444444"/>
+                                    <Setter TargetName="Box" Property="BorderBrush" Value="SkyBlue"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
         </ResourceDictionary>
     </Application.Resources>
 

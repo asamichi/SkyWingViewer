@@ -10,6 +10,7 @@ using SkyWingViewer.Services;
 using Microsoft.WindowsAPICodePack.Shell;
 using Microsoft.Extensions.Logging;
 using System.IO;
+using System.Diagnostics;
 
 namespace SkyWingViewer.ViewModels;
 
@@ -45,36 +46,43 @@ public partial class ImageAssetViewModel : AssetViewModelBase<ImageAsset>
 
     public async Task LoadThumbnail()
     {
-        _isVisible = 1;
-        // すでに読み込み済みなら何もしない
-        if (_isLoading == 1 || Thumbnail != null)
+        try
         {
-            _logger.LogTrace("再度サムネイル作成要求がありました。。Path: {Path}", _asset.AssetPath);
-
-            return;
-        }
-
-        _isLoading = 1;
-        //Thumbnail = await Task.Run(() => ts.getImageCache(_asset.AssetPath));
-        //Thumbnail = ts.getImageCache(_asset.AssetPath);
-
-
-        var _childCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationToken);
-
-        _logger.LogTrace("サムネイルの作成リクエストを実施します。Path: {Path}", _asset.AssetPath);
-        ThumbnailRequest thumbnailRequest = new ThumbnailRequest(_asset,async (result) =>
-        {
-            if(this._isVisible == 0)
+            _isVisible = 1;
+            // すでに読み込み済みなら何もしない
+            if (_isLoading == 1 || Thumbnail != null)
             {
-                _logger.LogTrace("既に必要のないサムネイルのため、値を格納しません。Path: {Path}", _asset.AssetPath);
+                _logger.LogTrace("再度サムネイル作成要求がありました。。Path: {Path}", _asset.AssetPath);
+
                 return;
             }
-            this.Thumbnail = result;
-        }, _childCancellationTokenSource.Token);
-        await thumbnailService.AddQueueAsync(thumbnailRequest);
+
+            _isLoading = 1;
+            //Thumbnail = await Task.Run(() => ts.getImageCache(_asset.AssetPath));
+            //Thumbnail = ts.getImageCache(_asset.AssetPath);
 
 
-        _isLoading = 0;
+            var _childCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationToken);
+
+            _logger.LogTrace("サムネイルの作成リクエストを実施します。Path: {Path}", _asset.AssetPath);
+            ThumbnailRequest thumbnailRequest = new ThumbnailRequest(_asset, async (result) =>
+            {
+                if (this._isVisible == 0)
+                {
+                    _logger.LogTrace("既に必要のないサムネイルのため、値を格納しません。Path: {Path}", _asset.AssetPath);
+                    return;
+                }
+                this.Thumbnail = result;
+            }, _childCancellationTokenSource.Token);
+            await thumbnailService.AddQueueAsync(thumbnailRequest);
+
+            _isLoading = 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("LoadThumbnail の中で例外が発生しました。{ex}", ex);
+        }
+
     }
 
     //TODO: 本当はVM側でキャンセルトークンソースを受け取って、子トークンをサムネイルサービスに渡してそれをキャンセルする仕組みにするべき

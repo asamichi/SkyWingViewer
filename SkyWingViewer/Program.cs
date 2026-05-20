@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -9,11 +11,14 @@ using SkyWingViewer.Models;
 using SkyWingViewer.Services;
 using SkyWingViewer.ViewModels;
 using SkyWingViewer.Views;
+using SkyWingViewer.Views.Services;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Threading;
+using static Microsoft.WindowsAPICodePack.Shell.PropertySystem.SystemProperties.System;
 
 
 
@@ -33,13 +38,36 @@ class Program
         /* *************** Host の設定～起動 ************** */
         HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
+
+        /* **********
+         * DB 関係の設定
+         * **********/
+        //appsettings.json に書くこともできる。今回は直接書いてしまう
+        var connectionString = builder.Configuration.GetConnectionString("SqliteConnection")
+                               ?? "Data Source=Database/SkyWingViewer.db";
+        // 「Data Source=」の部分を削ってパスだけにする
+        var rawPath = connectionString.Replace("Data Source=", "");
+
+        // フォルダ部分（Database/）を取り出して、なければ作成する
+        var directory = Path.GetDirectoryName(rawPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        //SQLite
+        builder.Services.AddDbContext<MyDbContext>(options =>
+            options.UseSqlite(
+                builder.Configuration.GetConnectionString("SqliteConnection")));
+
+
         /* **********
          * ログ関係
         /* serilog の設定 
          * CompactJsonFormatter 形式のログなため、閲覧時には下記等を DL して利用することを推奨
          https://github.com/warrenbuckley/Compact-Log-Format-Viewer/releases
-         
          * **********/
+
         //設定ファイル読み込み
         IConfiguration config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory) // アプリのディレクトリを基準パスに設定
@@ -62,6 +90,7 @@ class Program
         /* ********** モデル登録 ********* */
         builder.Services.AddTransient<TargetDirectory>(sp =>
         {
+            //return new TargetDirectory("E:\\テスト用");
             return new TargetDirectory("E:\\テスト用");
         });
 
@@ -72,6 +101,10 @@ class Program
         });
 
         /* ********** サービス層登録 ********* */
+
+        //メッセンジャー
+        builder.Services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
+
         //ターゲットディレクトリのパス
         builder.Services.AddSingleton<TargetNavigationService>();
 
@@ -80,6 +113,7 @@ class Program
 
         //メイン画面のアセット一覧管理
         builder.Services.AddSingleton<AssetListService>();
+        builder.Services.AddSingleton<AssetSelectionService>();
 
         //サムネイル関係
         builder.Services.AddSingleton<ThumbnailService>();
@@ -105,24 +139,52 @@ class Program
 
         //各アセットかディレクトリの詳細情報
         builder.Services.AddSingleton<ItemInformationService>();
-           
+
+        //タグ関係
+        builder.Services.AddSingleton<DatabaseService>();
+        builder.Services.AddSingleton<ItemTagService>();
+
+        //Popup 生成サービス
+        builder.Services.AddSingleton<PopupService>();
+        builder.Services.AddTransient<IPopupService>(sp => sp.GetRequiredService<PopupService>());
+
+        //星
+        builder.Services.AddSingleton<StarRatingService>();
+
         /* ********** vm 登録 ********* */
         //画面というか領域
-        builder.Services.AddTransient<AssetListViewModel>();
+        //ヘッダー
         builder.Services.AddTransient<TargetPathBarViewModel>();
         builder.Services.AddTransient<SearchBarViewModel>();
-        builder.Services.AddTransient<FavoriteListViewModel>();
-        builder.Services.AddTransient<AssetInformationViewModel>();
         builder.Services.AddTransient<HeaderAreaViewModel>();
         builder.Services.AddTransient<SortAreaViewModel>();
+        builder.Services.AddTransient<FilterButtonAreaViewModel>();
+        builder.Services.AddTransient<StarRatingFilterViewModel>();
 
-        //一覧の単体
-        builder.Services.AddTransient<ImageAssetViewModel>();
-        builder.Services.AddTransient<OtherAssetViewModel>();
-        builder.Services.AddTransient<DirectoryViewModel>();
 
-        //その他
+        //左
+        builder.Services.AddTransient<SideMenuAreaViewModel>();
+        builder.Services.AddTransient<FavoriteListViewModel>();
+
+        //メイン
+        builder.Services.AddTransient<AssetListViewModel>();
+        //一覧のファクトリー
         builder.Services.AddSingleton<AssetListViewModelFactory>();
+        //一覧の単体
+        //builder.Services.AddTransient<ImageAssetViewModel>();
+        //builder.Services.AddTransient<OtherAssetViewModel>();
+        //builder.Services.AddTransient<DirectoryViewModel>();
+
+        //右
+        builder.Services.AddTransient<SubAreaViewModel>();
+        builder.Services.AddTransient<AssetInformationViewModel>();
+        builder.Services.AddTransient<InformationTagViewModel>();
+        builder.Services.AddTransient<StarRatingViewModel>();
+
+        //Popup
+        builder.Services.AddTransient<TagEditViewModel>();
+        builder.Services.AddTransient<TagSearchViewModel>();
+        builder.Services.AddTransient<TagListViewModel>();
 
 
         //ビルド
@@ -137,18 +199,14 @@ class Program
 
         //vm 作成
         var assetListViewModel = host.Services.GetRequiredService<AssetListViewModel>();
-        //var targetPathBarViewModel = host.Services.GetRequiredService<TargetPathBarViewModel>();
         var headerAreaViewModel = host.Services.GetRequiredService<HeaderAreaViewModel>();
-
-
-
-        var favoriteListViewModel = host.Services.GetRequiredService<FavoriteListViewModel>();
-        var assetInformationViewModel = host.Services.GetRequiredService<AssetInformationViewModel>();
+        var sideMenuAreaViewModel = host.Services.GetRequiredService<SideMenuAreaViewModel>();
+        var subAreaViewModel = host.Services.GetRequiredService<SubAreaViewModel>();
 
         mainWindow.MainArea.DataContext = assetListViewModel;
         mainWindow.ToolBar.DataContext = headerAreaViewModel;
-        mainWindow.TreeMenu.DataContext = favoriteListViewModel;
-        mainWindow.SubArea.DataContext = assetInformationViewModel;
+        mainWindow.TreeMenu.DataContext = sideMenuAreaViewModel;
+        mainWindow.SubArea.DataContext = subAreaViewModel;
 
         //mainWindow.Show();
 
@@ -160,8 +218,15 @@ class Program
         */
         host.StartAsync().GetAwaiter().GetResult(); //サービスの起動について await 、起動が完了したら進む
 
+        using (var scope = host.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+            //状況を確認し、C# 側と DB 側で差異があればカラムの追加などを実施する
+            dbContext.Database.Migrate();
 
-
+            //WAL モードで起動する
+            //dbContext.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+        }
 
         app.Run(mainWindow); // アプリ起動中はこの行で止まる
 

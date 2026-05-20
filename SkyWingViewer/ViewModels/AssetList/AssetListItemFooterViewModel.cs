@@ -15,6 +15,7 @@ public partial class AssetListItemFooterViewModel : ObservableObject
     public AssetListItemFooterViewModel (FileSystemItemBase item)
     {
         //フォルダ名もこれでOK
-        targetName = Path.GetFileName(item.Path);
+        //末尾 \ には対応しないが、ユーザーがパスを指定することは無いのでこれで大丈夫
+        TargetName = item.Name;
     }
 }

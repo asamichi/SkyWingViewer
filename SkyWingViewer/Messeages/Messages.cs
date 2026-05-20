@@ -8,3 +8,4 @@ namespace SkyWingViewer.Messeages;
 
 //public record ChangeUpdateSelectionOnAssetList(ObservableCollection<Object> assets);
 //public record ChangeTargetInfomation(List<ItemInformation> InformationList);
+public record EditTagOnPopup(string tagName,bool isAdd);

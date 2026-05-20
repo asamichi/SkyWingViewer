@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-
 using System.IO;
-using static System.IO.Path;
 using System.Diagnostics;
+
+//プロパティに Path がいるので、毎回 System.... とするのは可読性が下がるため。
+using static System.IO.Path;
 
 namespace SkyWingViewer.Models;
 

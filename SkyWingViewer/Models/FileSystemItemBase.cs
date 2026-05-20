@@ -4,10 +4,14 @@ using System.Text;
 using System.IO;
 namespace SkyWingViewer.Models;
 
+//プロパティに Path がいるので、毎回 System.... とするのは可読性が下がるため。
+using static System.IO.Path;
+
 public abstract class FileSystemItemBase
 {
     public string Path { get; set; }
-    public string Name => System.IO.Path.GetFileName(Path);
+    //フォルダが対象の時に、末尾が階層の区切り文字、\ とかの時の対策で、末尾をトリムする
+    public string Name => GetFileName(Path.TrimEnd(DirectorySeparatorChar, AltDirectorySeparatorChar));
 
     public ItemMetadata Metadata { get; set; }
 

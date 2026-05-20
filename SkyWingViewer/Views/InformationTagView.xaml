@@ -1,0 +1,116 @@
+﻿<UserControl x:Class="SkyWingViewer.Views.InformationTagView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SkyWingViewer.Views"
+             mc:Ignorable="d" 
+             xmlns:ic="clr-namespace:FluentIcons.Wpf;assembly=FluentIcons.Wpf"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <!--BaseOn により、元々のデフォルトスタイルを元にする（これが無いとデフォルトのスタイルでは無くなるので色々変わってしまう）-->
+        <!--<Style x:Key="IconButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="5,5"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Height" Value="Auto"/>
+            <Setter Property="Width" Value="Auto"/>
+            <Setter Property="MinHeight" Value="12"/>
+        </Style>-->
+
+        <!-- AI: 以下のスタイルは AI に生成させたものを、手動でパラメータ調整したもの-->
+        <!-- タグ全体の枠線と角丸の設定 -->
+        <Style x:Key="TagBorderStyle" TargetType="Border">
+            <!-- MahAppsのデフォルトの境界線色を使用する場合、明示しなくてもOKですが、
+             太さを変えたい場合はここを調整します -->
+            <Setter Property="BorderBrush" Value="{DynamicResource MahApps.Brushes.Gray4}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <!-- 少し丸い角 -->
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="2,2,2,2"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <!-- 削除ボタン（×）や追加ボタン（＋）のスタイル -->
+        <Style x:Key="IconButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Width" Value="Auto"/>
+            <!-- 幅を自動に固定 -->
+            <Setter Property="Padding" Value="4,0"/>
+            <!-- 左右の余白だけ残し、上下は0にする -->
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="Margin" Value="0,0,0,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <!-- マウスホバー時に少し背景を出す -->
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Gray8}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+    
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Label Content="タグ" Grid.Row="0"/>
+        <!--<Button Content="テスト" Command="{Binding OpenTagEditCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />-->
+        <!--GridとWrapPanelで囲うのは、タグリストが折り返すようにするため。
+        StackPanel だと横方向に積み続けるので折り返してくれない-->
+        <Grid Grid.Row="1">
+            <WrapPanel>
+                <Border>
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource TagBorderStyle}">
+                            <!--デフォルトは非表示-->
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <!--AddTagBtnHideFlag が 0 の時に表示する-->
+                                <DataTrigger Binding="{Binding AddTagBtnHideFlag}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>                
+                    </Border.Style>
+                    <Button Content="＋" 
+                        Command="{Binding OpenTagEditCommand}" 
+                        CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                        Style="{StaticResource IconButtonStyle}"/>
+                </Border>
+
+                <ItemsControl
+                    ItemsSource="{Binding Tags}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <!--各アイテム-->
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource TagBorderStyle}" Padding="6,2,2,2">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding}"/>
+                                    <Button 
+                                            Command="{Binding DataContext.DetachTagCommand, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{StaticResource IconButtonStyle}">
+                                        <ic:FluentIcon Icon="Dismiss" IconSize="Size12" FontSize="10"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </WrapPanel>
+        </Grid>
+    </Grid>
+</UserControl>

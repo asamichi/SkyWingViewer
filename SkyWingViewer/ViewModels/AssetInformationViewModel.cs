@@ -16,10 +16,13 @@ public partial class AssetInformationViewModel : ObservableObject
 
     private ItemInformationService _itemInformationService;
 
-    public AssetInformationViewModel(ItemInformationService itemInformationService)
+    public StarRatingViewModel StarRatingViewModel { get; set; }
+
+    public AssetInformationViewModel(ItemInformationService itemInformationService, StarRatingViewModel starRatingViewModel)
     {
         _itemInformationService = itemInformationService;
         _itemInformationService.InformationItemChanged += OnInformationItemChanged;
+        StarRatingViewModel = starRatingViewModel;
     }
 
 

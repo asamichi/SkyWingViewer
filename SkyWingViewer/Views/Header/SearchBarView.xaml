@@ -13,6 +13,6 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <ic:FluentIcon Icon="Search" IconSize="Size16" FontSize="16" Grid.Column="0"/>
-        <TextBox x:Name="SearchTextBox" Text="{Binding SearchValue}" Grid.Column="1"></TextBox>
+        <TextBox x:Name="SearchTextBox" Text="{Binding SearchValue, UpdateSourceTrigger=PropertyChanged,Delay=30}" Grid.Column="1"></TextBox>
     </Grid>
 </UserControl>

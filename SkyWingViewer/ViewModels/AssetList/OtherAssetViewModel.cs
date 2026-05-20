@@ -31,8 +31,16 @@ public partial class OtherAssetViewModel : AssetViewModelBase<OtherAsset>
         _cancellationToken = ct;
         _ = Task.Run(async () =>
         {
-            //await GetIconAsync(otherAsset.AssetPath);
-            await LoadThumbnail();
+            try
+            {
+                //await GetIconAsync(otherAsset.AssetPath);
+                await LoadThumbnail();
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError("OtherAssetViewModel コンストラクタの中で例外が発生しました。{ex}", ex);
+            }
+
         },_cancellationToken);
     }
 

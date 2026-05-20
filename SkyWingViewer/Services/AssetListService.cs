@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.Logging;
 using SkyWingViewer.Models;
 using SkyWingViewer.Services;
 using SkyWingViewer.ViewModels;
@@ -19,28 +20,37 @@ public class AssetListService
     public event Action? TargetPathChanged;
     public event Action? ItemsChanged;
 
+    private bool _isLoadedMetadataFromDB = false;
 
     //ディレクトリ内の各アセットを格納
     public List<FileSystemItemBase> _assetModels = new();
     public List<FileSystemItemBase> _directoryModels = new();
+    public IEnumerable<FileSystemItemBase> _allModels => _assetModels.Concat(_directoryModels);
 
     //表示中のディレクトリ対象管理
     private TargetNavigationService _targetNavigationService;
     public string TargetPath { get; set; }
 
-    public ItemSearchService _itemSearchService;
+    private ItemSearchService _itemSearchService;
+    private StarRatingService _starRatingService;
+    private ILogger _logger;
 
+    //TODO: せっかくアセットのリスト持っているので、一緒にタグとかの情報も持ってしまえば、検索条件変更したときにデータベースにアクセスしなくても良くできそう？
 
-    public AssetListService(TargetNavigationService targetNavigationService,ItemSearchService itemSearchService)
+    public AssetListService(TargetNavigationService targetNavigationService,ItemSearchService itemSearchService,ILogger<AssetListService> logger,StarRatingService starRatingService)
     {
         _targetNavigationService = targetNavigationService;
         TargetPath = _targetNavigationService.Path;
 
         _itemSearchService = itemSearchService;
+        _starRatingService = starRatingService;
+        _logger = logger;
         
         //イベント登録
         _targetNavigationService.TargetPathChanged += OnTargetPathChanged;
         _itemSearchService.SearchWordsChanged += OnSearchWordsChanged;
+        _itemSearchService.SearchTagsChanged += OnSearchTagsChanged;
+        _itemSearchService.SearchStarRateChanged += OnSearchStarRateChanged;
     }
 
 
@@ -68,23 +78,56 @@ public class AssetListService
         {
             var asset = AssetFactory.CreateAssetInstance(filePath);
             _assetModels.Add(asset);
-
             //if(_itemSearchService.IsTarget(asset))
                     yield return asset;
         }
-
     }
+
+
 
     // TargetPath が変わった時の処理
     private void OnTargetPathChanged()
     {
         TargetPath = _targetNavigationService.Path;
         TargetPathChanged?.Invoke();
+        _isLoadedMetadataFromDB = false;
     }
 
     private void OnSearchWordsChanged()
     {
         ItemsChanged?.Invoke();
     }
+    private void OnSearchTagsChanged()
+    {
+        ItemsChanged?.Invoke();
+    }
 
+
+    //TODO: テストの範囲だとバグらないけど、うまいことやればバグらせられそうな実装。アセット読み込み時に DB からロードしてしまって良さそう。
+    private void OnSearchStarRateChanged()
+    {
+        if(_isLoadedMetadataFromDB == false)
+        {
+            _ = UpdateRatesInAssetList();
+        }
+        else
+        {
+            ItemsChanged?.Invoke();
+        }
+    }
+
+    private async Task UpdateRatesInAssetList()
+    {
+        try
+        {
+            await _starRatingService.SetRateFromParentPathAsync(_allModels);
+            _isLoadedMetadataFromDB = true;
+            ItemsChanged?.Invoke();
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("UpdateRatesInAssetList の際に例外が発生しました。{ex}", ex);
+        }
+    }
 }

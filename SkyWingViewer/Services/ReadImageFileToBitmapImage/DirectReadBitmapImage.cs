@@ -26,6 +26,7 @@ class DirectReadBitmapImage
     };
 
     //CreateThumbnailFile から移植
+    //主に重い画像の読み込みを想定。サムネイルのような軽量な画像は ThumbnailService にある CreateBitmapImage を使うこと
     public static BitmapImage? GetBitmapImage(string filePath, int ThumbnailSizeWidth,int ThumbnailSizeHeight)
     {
         BitmapImage original = new();

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Identity.Client;
 using SkyWingViewer.Models;
 using System;
 using System.Collections.Generic;
@@ -24,11 +25,11 @@ public class ThumbnailRequest
 
     //TaskCompletionSource よりも Action でコールバックさせるほうが軽い。呼び出し元で後続の処理など無いのでこちらに変更
     //public TaskCompletionSource<BitmapImage> Completion { get; init; }
-    public Action<BitmapImage> OnCompleted { get; }
+    public Action<BitmapSource> OnCompleted { get; }
 
     public CancellationToken _token;
 
-    public ThumbnailRequest(ImageAsset asset,Action<BitmapImage> onCompleted, CancellationToken token)
+    public ThumbnailRequest(ImageAsset asset,Action<BitmapSource> onCompleted, CancellationToken token)
     {
         Asset = asset;
         //Completion = new();
@@ -127,7 +128,12 @@ public class ThumbnailService : BackgroundService
                     {
                         string path = request.Asset.AssetPath;
 
-                        BitmapImage bitmap = getImageCache(path);
+                        BitmapSource? bitmap = getImageCache(path);
+
+                        if(bitmap == null)
+                        {
+                            //TODO: 本来 null は無いはずだが、null の時にシェルからとりあえず何かを取得する処理を追加すること
+                        }
 
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
@@ -136,7 +142,7 @@ public class ThumbnailService : BackgroundService
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogInformation("Task.Run の中で例外が発生しました。{ex}", ex);
+                        _logger.LogError("ExecuteAsync: Task.Run の中で例外が発生しました。{ex}", ex);
 
                     }
                     finally
@@ -156,13 +162,14 @@ public class ThumbnailService : BackgroundService
                 
             }
         }
-        catch (TaskCanceledException)
+        catch (OperationCanceledException)
         {
             // キャンセルされた場合は想定内なので無視して良い
+            // アプリ終了時のキャンセルも想定内なので、TaskCanceledException の親クラスの TaskCanceledException を指定
         }
         catch (Exception ex)
         {
-            _logger.LogInformation("foreach 内部でキャッチできない例外が発生しました。{ex}", ex);
+            _logger.LogError("foreach 内部でキャッチできない例外が発生しました。{ex}", ex);
 
         }
     }
@@ -191,7 +198,7 @@ public class ThumbnailService : BackgroundService
     //public ImageSize CurrentThumbnailSize = new((int)(2048), (int)(2048));
 
 
-    public BitmapImage getImageCache(string path)
+    public BitmapSource? getImageCache(string path)
     {
         if (File.Exists(path) == false)
         {
@@ -209,7 +216,7 @@ public class ThumbnailService : BackgroundService
         //サムネイルファイルが無いならサムネイルファイルを作成
         if (File.Exists(thumbnailPath) == false)
         {
-            CreateThumbnailFile(path, thumbnailPath);
+            return CreateThumbnailFile(path, thumbnailPath) ?? null;
         }
         //TODO: 現状必ずディスクのサムネイルを読んでいるが、作成した場合はそれを直接返すほうがディスクIOの節約になる
         //この時点では必ずサムネイルファイルはあるので、それを読んで返す
@@ -223,7 +230,8 @@ public class ThumbnailService : BackgroundService
 
 
     //サムネイルファイルを読み込んで、メモリに載せて返す。サムネイルファイルは軽量なので、ディスク負荷も軽微な想定。
-    private BitmapImage CreateBitmapImage(string thumbnailPath)
+    //サムネイルの読み取りに利用すること。重い画像の読み取りでは DirectReadBitmapImage.GetBitmapImage を使用する想定
+    private BitmapSource CreateBitmapImage(string thumbnailPath)
     {
         BitmapImage bitmapImage = new();
 
@@ -245,25 +253,78 @@ public class ThumbnailService : BackgroundService
 
     //サムネイルファイルを作成して保存する
     //TODO: 読み込み、加工、保存はそれぞれ異なるメソッドに分離、内容を切り替えられるようにすること。
-    private void CreateThumbnailFile(string filePath,string outputPath)
+    private BitmapSource? CreateThumbnailFile(string filePath,string outputPath)
     {
-        ImageSize currentThumbnailSize = CurrentThumbnailSize;//実体コピー。処理中にサムネイルサイズの指定が変わってもこの回での整合性は保たれる
-        BitmapSource? original = null;
+        //実体コピー。処理中にサムネイルサイズの指定が変わってもこの回での整合性は保たれる
+        ImageSize currentThumbnailSize = CurrentThumbnailSize;
 
+        //オリジナル画像を読み込んで格納
+        BitmapSource? original = ReadImage(filePath, currentThumbnailSize);
+
+        if(original == null)
+        {
+            return null;
+        }
+
+        //切り抜き
+        BitmapSource croppedImage = CenterCropImage(original, currentThumbnailSize);
+
+        //リサイズ
+        BitmapSource resizedImage = ResizeImage(croppedImage,currentThumbnailSize);
+
+
+        //他スレッドで利用できるようにフリーズ
+        resizedImage.Freeze();
+
+
+        /* 保存する */
+        //https://learn.microsoft.com/ja-jp/dotnet/desktop/wpf/graphics-multimedia/how-to-encode-and-decode-a-jpeg-image
+        //https://learn.microsoft.com/ja-jp/dotnet/api/system.windows.media.imaging.jpegbitmapencoder?view=windowsdesktop-10.0
+
+
+        //TODO: .png とかが対象の時、全部 .png で保存される点を修正する。 
+        JpegBitmapEncoder encoder = new();
+        //品質は 85 あれば視覚的には最高品質らしい
+        //https://developers.google.com/speed/docs/insights/OptimizeImages?hl=ja
+        encoder.QualityLevel = 85;
+        encoder.Frames.Add(BitmapFrame.Create(resizedImage));
+
+
+        //上書きは決してしない。事故防止
+        if(File.Exists(outputPath) == true)
+        {
+            return null;
+        }
+
+        string directoryPath = Path.GetDirectoryName(outputPath) ?? "";
+        // フォルダが存在しない場合は、親フォルダを含めて一気に作成する
+        if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
+        {
+            Directory.CreateDirectory(directoryPath);
+        }
+
+        using Stream outputStream = File.Create(outputPath);
+        encoder.Save(outputStream);
+        return resizedImage;
+    }
+
+    //読み取り
+    private BitmapSource? ReadImage(string filePath,ImageSize currentThumbnailSize)
+    {
+        BitmapSource? original = null;
 
         //WQHD のスクショ(jpb) + HDD でも特に軽い印象だったので一旦これで
         //TODO: 10MB 越えの .bmp 形式の WQHD スクショは他の画像より優位に遅かったように見えたときがあった = 差異のポイントからこの読み取りが重かったと想定されるので、非同期にしてスレッド解放して上げても良いかも。ファイル読み取り非同期かはディスクIO待ち中のスレッド有効活用、DecodePixelWidth 等でメモリ節約できる
-        
+
         //拡張子を取得　-> 対応する処理が _provider にあればそちらを実行
         string extension = Path.GetExtension(filePath);
         if (_providers.ContainsKey(extension))
         {
             original = _providers[extension].GetBitmapImage(filePath);
             _logger.LogTrace("オリジナルを読み込みました。{type}", ".clip 拡張");
-
         }
 
-        //TODO: サムネイル画質荒くていいなら shellFile の優先度上げていいかも。OS キャッシュある時はそちらが早い、無いときは概ね同じくらい
+        //TODO: サムネイル画質荒くていいなら shellFile の優先度上げていいかも。OS キャッシュある時はそちらが早いかもしれない、無いときは概ね同じくらいに見える
         if (original == null)
         {
             original = DirectReadBitmapImage.GetBitmapImage(filePath, currentThumbnailSize.Width, currentThumbnailSize.Height);
@@ -273,31 +334,34 @@ public class ThumbnailService : BackgroundService
         if (original == null)
         {
             original = CreateBitmapImage(filePath);
-            _logger.LogTrace("オリジナルを読み込みました。ファイル名：{filename}, 読み取りタイプ: {type}, 読み取りサイズ {x}x{y}", Path.GetFileName(filePath), "shellFile 読み取り",original.Width,original.Height);
+            _logger.LogTrace("オリジナルを読み込みました。ファイル名：{filename}, 読み取りタイプ: {type}, 読み取りサイズ {x}x{y}", Path.GetFileName(filePath), "shellFile 読み取り", original.Width, original.Height);
         }
 
 
-        if(original == null)
+        if (original == null)
         {
-            _logger.LogInformation("全ての読み取り処理を実行しましたが、original == null です。");
-            return;
+            _logger.LogWarning("全ての読み取り処理を実行しましたが、original == null です。");
+            return null;
         }
+        return original;
+    }
 
 
+    //切り抜き
+    private BitmapSource CenterCropImage(BitmapSource image, ImageSize currentThumbnailSize)
+    {
         //縦サイズ、横サイズ、縦横比
         //int originalWidth = original.PixelWidth; //PixelWidthは int 型
         //int originalHeight = original.PixelHeight;
 
-        ImageSize originalSize = new(original.PixelWidth, original.PixelHeight);
-        double originalRatio = GetSizeRatio(originalSize.Width,originalSize.Height);
+        ImageSize originalSize = new(image.PixelWidth, image.PixelHeight);
+        double originalRatio = GetSizeRatio(originalSize.Width, originalSize.Height);
 
         //作成するサムネイルの比率
         double thumbnailRatio = GetSizeRatio(currentThumbnailSize.Width, currentThumbnailSize.Height);
 
         //切り取りサイズ
         ImageSize cropSize;
-
-
 
         /*  ここからサムネイルサイズの比率で可能な限り最大サイズの画像を、オリジナルから切り出す処理  */
         //オリジナルはサムネイルより横に長い
@@ -316,51 +380,28 @@ public class ThumbnailService : BackgroundService
         }
 
         //切り取る四角形の左上の座標
-        int x = (originalSize.Width - cropSize.Width)/2;
-        int y = (originalSize.Height - cropSize.Height)/2;
+        int x = (originalSize.Width - cropSize.Width) / 2;
+        int y = (originalSize.Height - cropSize.Height) / 2;
 
         //切り抜き
-        CroppedBitmap croppedImage = new CroppedBitmap(original, new Int32Rect(x, y, cropSize.Width, cropSize.Height));
+        CroppedBitmap croppedImage = new CroppedBitmap(image, new Int32Rect(x, y, cropSize.Width, cropSize.Height));
 
+        return croppedImage;
+    }
+
+    //リサイズ
+    private BitmapSource ResizeImage(BitmapSource image, ImageSize currentThumbnailSize)
+    {
+        ImageSize originalSize = new(image.PixelWidth, image.PixelHeight);
 
         /* サムネイルにする領域は切り抜けたので、サムネイルのサイズに縮小する */
-        double scaleX = (double)currentThumbnailSize.Width / cropSize.Width;
-        double scaleY = (double)currentThumbnailSize.Height / cropSize.Height;
+        double scaleX = (double)currentThumbnailSize.Width / originalSize.Width;
+        double scaleY = (double)currentThumbnailSize.Height / originalSize.Height;
 
         //https://learn.microsoft.com/ja-jp/dotnet/api/system.windows.media.scaletransform.-ctor?view=windowsdesktop-8.0
-        TransformedBitmap resizedImage = new TransformedBitmap(croppedImage, new ScaleTransform(scaleX, scaleY));
-        resizedImage.Freeze();
-
-        /* 保存する */
-        //https://learn.microsoft.com/ja-jp/dotnet/desktop/wpf/graphics-multimedia/how-to-encode-and-decode-a-jpeg-image
-        //https://learn.microsoft.com/ja-jp/dotnet/api/system.windows.media.imaging.jpegbitmapencoder?view=windowsdesktop-10.0
-
-
-        //TODO: .png とかが対象の時、全部 .png で保存される点を修正する。 
-        JpegBitmapEncoder encoder = new();
-        //品質は 85 あれば視覚的には最高品質らしい
-        //https://developers.google.com/speed/docs/insights/OptimizeImages?hl=ja
-        encoder.QualityLevel = 85;
-        encoder.Frames.Add(BitmapFrame.Create(resizedImage));
-
-
-        //上書きは決してしない。事故防止
-        if(File.Exists(outputPath) == true)
-        {
-            return;
-        }
-
-        string directoryPath = Path.GetDirectoryName(outputPath) ?? "";
-        // フォルダが存在しない場合は、親フォルダを含めて一気に作成する
-        if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
-        {
-            Directory.CreateDirectory(directoryPath);
-        }
-
-        using Stream outputStream = File.Create(outputPath);
-        encoder.Save(outputStream);
-
+        return new TransformedBitmap(image, new ScaleTransform(scaleX, scaleY));
     }
+
 
 
     //画像サイズの縦横比の取得。どちらをどちらで割るというののミス防止

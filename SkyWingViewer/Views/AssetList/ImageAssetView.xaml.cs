@@ -1,4 +1,5 @@
-﻿using SkyWingViewer.ViewModels;
+﻿using Microsoft.Extensions.Logging;
+using SkyWingViewer.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -64,7 +65,8 @@ namespace SkyWingViewer.Views
         //}
 
 
-        private async void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        //イベントハンドラーが void 固定なので、この async void は回避できない
+        private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             //OldValue に以前の ViewModel は入ってない模様。原因不明。
             //OldValue には MS.Internal.NamedObject が入ってた
@@ -75,8 +77,6 @@ namespace SkyWingViewer.Views
             //    oldVM.UnloadThumbnail();
 
             //}
-
-            
 
             if (_lastVM != null)
             {
@@ -89,12 +89,10 @@ namespace SkyWingViewer.Views
             {
                 _lastVM = newVM;
                 newVM.ViewCount++;
-                await newVM.LoadThumbnail();
+                //await newVM.LoadThumbnail();
+                _ = newVM.LoadThumbnail();  
             }
-
         }
-
-
 
         //イベント発火テスト用
         //private async void OnLoaded(object sender, RoutedEventArgs e)

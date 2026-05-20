@@ -33,11 +33,16 @@ public partial class DirectoryViewModel : FileSystemItemViewModelBase<DirectoryM
         _logger = logger;
         _targetNavigationService = targetNavigationService;
 
-        //DirectoryName = Path.GetFileName(directoryPath);
-
         _ = Task.Run(async () =>
         {
-            await GetIconAsync(directoryPath);
+            try
+            {
+                await GetIconAsync(directoryPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("DirectoryViewModel コンストラクタの中で例外が発生しました。{ex}", ex);
+            }
         });
 
         OpenCommand = DirectoryOpenCommand;

@@ -71,6 +71,7 @@ public partial class FileSystemItemViewModelBase<TModel> : FileSystemItemViewMod
 
         list.Add(new ContextMenuItem("エクスプローラーで表示", OpenExplorerCommand));
         list.Add(new ContextMenuItem("パスをコピー", CopyPathCommand));
+
         return list;
     }
 

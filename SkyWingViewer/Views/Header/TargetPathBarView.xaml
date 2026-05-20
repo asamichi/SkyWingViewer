@@ -7,6 +7,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
+        <!--TODO: Enter キーで入力確定するようにする-->
         <TextBox x:Name="TargetPathTextBox" Text="{Binding TargetPath, Mode=TwoWay}">
             <TextBox.InputBindings>
                 <KeyBinding Key="Enter"></KeyBinding>

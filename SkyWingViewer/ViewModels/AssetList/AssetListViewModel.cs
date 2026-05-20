@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using SkyWingViewer.Models;
 using SkyWingViewer.Services;
 using SkyWingViewer.Views;
@@ -53,7 +54,12 @@ public partial class AssetListViewModel : ObservableObject
     //ソート。同上の理由でいったんこの方式で
     private ItemSortService _itemSortService;
 
-    public AssetListViewModel(TargetNavigationService targetNavigationService,AssetListViewModelFactory factory, ItemInformationService itemInformationService, AssetListService assetListService,ItemSearchService itemSearchService,ItemSortService itemSortService)
+    //選択中のアセットの管理
+    private AssetSelectionService _assetSelectionService;
+
+    private ILogger _logger;
+
+    public AssetListViewModel(TargetNavigationService targetNavigationService,AssetListViewModelFactory factory, ItemInformationService itemInformationService, AssetListService assetListService,ItemSearchService itemSearchService,ItemSortService itemSortService,AssetSelectionService assetSelectionService,ILogger<AssetListViewModel> logger)
     {
         _targetNavigationService = targetNavigationService;
         TargetPath = _targetNavigationService.Path;
@@ -62,6 +68,8 @@ public partial class AssetListViewModel : ObservableObject
         _assetListService = assetListService;
         _itemSearchService = itemSearchService;
         _itemSortService = itemSortService;
+        _assetSelectionService = assetSelectionService;
+        _logger = logger;
         Assets = new ObservableCollection<FileSystemItemViewModelBase>();
         AssetsView = new ListCollectionView(Assets);
 
@@ -84,19 +92,23 @@ public partial class AssetListViewModel : ObservableObject
         directoryCTS = new();
         CancellationToken token = directoryCTS.Token;
 
+        //TODO: async XXX と別メソッドに切り出して、await XXX(); で呼ぶ方が読みやすいかも
         try
         {
             await Task.Run(async () =>
             {
                 List<FileSystemItemViewModelBase> buffer = new List<FileSystemItemViewModelBase>();
-                //見た目の気持ちよさとディレクトリ移動直後等のレスポンスの良さを考え、始めは 1 件ずつ表示。見えないところまでいったら、効率化のためバッチサイズを大きくしてまとめて追加していくようにする。
-                int BatchSize = 100;
+                //見た目の気持ちよさとディレクトリ移動直後等のレスポンスの良さを考え、始めは 1 件ずつ表示。->ソート機能との兼ね合いで始めからそこそこのまとまりで読み込む。
+                //見えないところまでいったら、効率化のためバッチサイズを大きくしてまとめて追加していくようにする。
+                int BatchSize = 10;
                 int TotalCnt = 0;
 
                 foreach(var items in _assetListService.EnumerateLoadDirectory())
                 {
                     if (token.IsCancellationRequested) break;
+
                     var viewModel = _vmFactory.Create(items, directoryCTS);
+
                     if (viewModel != null)
                     {
                         buffer.Add(viewModel);
@@ -111,7 +123,7 @@ public partial class AssetListViewModel : ObservableObject
 
                     if(TotalCnt > 100)
                     {
-                        BatchSize = 1000;
+                        BatchSize = 100;
                     }
                 }
                 //まとめて処理する分の端数分
@@ -135,17 +147,17 @@ public partial class AssetListViewModel : ObservableObject
 
         //TODO: 実際の効果のほどはわかってない
         //指定されているソートでリストを渡すことで、対象が多いフォルダに移動した時のソートによる入れかえが見えにくいように
-        bool isAscending = _itemSortService.SortKey.SortDescription.Direction == ListSortDirection.Ascending;
+        //bool isAscending = _itemSortService.SortKey.SortDescription.Direction == ListSortDirection.Ascending;
 
-        if (isAscending)
-        {
-            copy.OrderBy(vm => _itemSortService.SortKey.GetSortTarget(vm.Model));
-        }
-        else
-        {
-            copy.OrderByDescending(vm => _itemSortService.SortKey.GetSortTarget(vm.Model));
+        //if (isAscending)
+        //{
+        //    copy = copy.OrderBy(vm => _itemSortService.SortKey.GetSortTarget(vm.Model)).ToList();
+        //}
+        //else
+        //{
+        //    copy = copy.OrderByDescending(vm => _itemSortService.SortKey.GetSortTarget(vm.Model)).ToList();
 
-        }
+        //}
 
         //UI スレッドで実行する必要がある
         await App.Current.Dispatcher.InvokeAsync(() =>
@@ -160,19 +172,29 @@ public partial class AssetListViewModel : ObservableObject
     }
 
     // TargetPath が変わった時の処理
-    private async void OnTargetPathChanged()
+    private void OnTargetPathChanged()
     {
         TargetPath = _targetNavigationService.Path;
 
         //新しいターゲットの内容に更新して表示する
-        //LoadDirectory(TargetPath);
-        await LoadAssetsAsync();
+        _ = CallLoadAssetsAsync();
+    }
+
+    private async Task CallLoadAssetsAsync()
+    {
+        try
+        {
+            await LoadAssetsAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("CallLoadAssetsAsync の中で例外が発生しました。{ex}", ex);
+        }
     }
 
     //検索対象が変わったら読み込みしなおす
-    private async void OnItemsChanged()
+    private void OnItemsChanged()
     {
-        //await LoadAssetsAsync();
         AssetsView.Filter = (obj =>
         {
             if (obj is FileSystemItemViewModelBase vm)
@@ -194,15 +216,32 @@ public partial class AssetListViewModel : ObservableObject
     }
 
     //選択対象に応じた詳細を表示するよう、詳細表示サービスに対象を伝える
+    //TODO: 選択対象を取得するサービスが２つ以上になったので、選択中の対象を管理するサービスを作って、皆底を参照するようにしても良いかも。
     [RelayCommand]
     public void UpdateSelection(object parameter)
     {
+
+        //TODO: 詳細情報表示時点では AssetSelectionService が無かった。一旦追記したのみにしたが、余裕が出たら統合すること。
         List<IItemInformationProvider>? list = null;
         if (parameter is System.Collections.IList parameterList)
         {
             list = parameterList.OfType<IItemInformationProvider>().ToList();
+
+
+            //選択されている対象のモデルを AssetSelectionService に反映
+            List<FileSystemItemBase> selectedAssetList = new List<FileSystemItemBase>();
+            foreach(var item in parameterList)
+            {
+                if(item is FileSystemItemViewModelBase vm)
+                {
+                    selectedAssetList.Add(vm.Model);
+                }
+            }
+            _assetSelectionService.TargetItems = selectedAssetList;
+
         }
         _itemInformationService.TargetItems = list;
+
     }
 
 }

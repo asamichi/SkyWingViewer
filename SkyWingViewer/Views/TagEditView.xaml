@@ -1,0 +1,94 @@
+﻿<UserControl x:Class="SkyWingViewer.Views.TagEditView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SkyWingViewer.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <TextBox Text="{Binding SearchWord}" Grid.Row="0"/>
+
+        <StackPanel Orientation="Horizontal" Grid.Row="1">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <!-- デフォルトは非表示 -->
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <!-- tagRegistrationBtnFlag == true の時表示する -->
+                        <DataTrigger Binding="{Binding TagRegistrationBtnFlag}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <Label Content="タグを作成して登録："/>
+            <CheckBox Content="{Binding TagRegistrationBtn.TagName}"
+                  IsChecked="{Binding TagRegistrationBtn.IsChecked}"
+                  Grid.Row="1">
+                <!--<CheckBox.Style>
+                    <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+                        --><!-- デフォルトは非表示 --><!--
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            --><!-- tagRegistrationBtnFlag == true の時表示する --><!--
+                            <DataTrigger Binding="{Binding TagRegistrationBtnFlag}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </CheckBox.Style>-->
+            </CheckBox>
+        </StackPanel>
+
+        
+
+        <TextBlock Text="登録されているタグはありません"
+                   Grid.Row="2">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                     <!--デフォルトは非表示--> 
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                         <!--TagList のカウントが 0 の時に表示する--> 
+                        <DataTrigger Binding="{Binding TagList.Count}" Value="0">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <!--上記タグが空の時のテキストが見えるように、背景を透明にする-->
+        <ListBox ItemsSource="{Binding TagList}"
+                Grid.Row="2"
+                Background="Transparent"
+                BorderThickness="0">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <!-- 自動で折り返す -->
+                    <!--<WrapPanel Orientation="Horizontal" />-->
+                    <!--2 列で表示する-->
+                    <UniformGrid Columns="2" VerticalAlignment="Top"/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem" BasedOn="{StaticResource CheckBoxHighlightStyle}">
+                    <!--WrapPanelにする場合、横幅を統一しないと各列で表示数がバラバラになる-->
+                    <!--<Setter Property="Width" Value="100"/>-->
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <CheckBox Content="{Binding TagName}" IsChecked="{Binding IsChecked}"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+    </Grid>
+</UserControl>

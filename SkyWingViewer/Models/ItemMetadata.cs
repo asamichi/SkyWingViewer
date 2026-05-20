@@ -15,9 +15,8 @@ public class ItemMetadata
 
     public long? Length { get; set; }
 
-    //以下は未実装
-    //public int rate { get; set; }
-    //public List<String> Tags;
+    public int Rating { get; set; } = 0;
+    public List<string> Tags { get; set; } = new();
 
     public ItemMetadata(FileSystemInfo fileSystemInfo)
     {

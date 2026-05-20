@@ -16,10 +16,12 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
         <ContentControl Content="{Binding TargetPathBarViewModel}" Grid.Column="0"/>
         <ContentControl Content="{Binding SortAreaViewModel}" Grid.Column="1"/>
-        <ContentControl Content="{Binding SearchBarViewModel}" Grid.Column="2"/>
+        <ContentControl Content="{Binding FilterButtonAreaViewModel}" Grid.Column="2"/>
+        <ContentControl Content="{Binding SearchBarViewModel}" Grid.Column="3"/>
     </Grid>
 </UserControl>

@@ -32,6 +32,7 @@
         TargetUpdated="AssetsListTargetUpdated"
         VirtualizingPanel.VirtualizationMode="Recycling"
         ScrollViewer.CanContentScroll="True"
+        VirtualizingPanel.ScrollUnit="Pixel"
         VirtualizingPanel.CacheLength="50"
         VirtualizingPanel.CacheLengthUnit="Item">
         <!--TODO: CacheLength もバインドできるので、動的に変更させるように変更。サムネイル作成要求が空になったら伸ばす感じで。始めは０にすることで、まず見えるところからできる。-->
@@ -58,8 +59,8 @@
         <i:Interaction.Triggers>
             <i:EventTrigger EventName="SelectionChanged">
                 <i:InvokeCommandAction 
-            Command="{Binding UpdateSelectionCommand}" 
-            CommandParameter="{Binding SelectedItems, ElementName=AssetsList}" />
+                    Command="{Binding UpdateSelectionCommand}" 
+                    CommandParameter="{Binding SelectedItems, ElementName=AssetsList}" />
             </i:EventTrigger>
         </i:Interaction.Triggers>
         <ListView.ItemsPanel>
@@ -67,6 +68,7 @@
                 <vwp:VirtualizingWrapPanel/>
             </ItemsPanelTemplate>
         </ListView.ItemsPanel>
+        <!--各アイテム-->
         <ListView.ItemTemplate>
             <DataTemplate>
                 <ContentControl Content="{Binding}"/>

@@ -13,12 +13,15 @@ public class HeaderAreaViewModel
 
     public SortAreaViewModel SortAreaViewModel { get; set; }
 
+    public FilterButtonAreaViewModel FilterButtonAreaViewModel { get; set; }
+
     public HeaderAreaViewModel(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
         TargetPathBarViewModel = _serviceProvider.GetRequiredService<TargetPathBarViewModel>();
         SearchBarViewModel = _serviceProvider.GetRequiredService<SearchBarViewModel>();
         SortAreaViewModel = _serviceProvider.GetRequiredService<SortAreaViewModel>();
+        FilterButtonAreaViewModel = _serviceProvider.GetRequiredService<FilterButtonAreaViewModel>();
     }
 
 

@@ -46,7 +46,6 @@ public class FavoriteListService
         _logger.LogInformation("お気に入りに追加します。Path: {path}", path);
         FavoriteModel favoriteModel = new(path);
         
-        //TODO: FavoliteModel を作成。ディレクトリは Metadata 持つようになったので Json で扱えない
         FavoriteList.Add(favoriteModel);
         _storage.SaveJson(_appSettings);
     }

@@ -9,7 +9,7 @@
              d:DesignHeight="450" d:DesignWidth="800">
     <StackPanel Orientation="Horizontal">
         <ic:FluentIcon Icon="ArrowSort" IconSize="Size16" FontSize="16" Grid.Column="0"/>
-        <ic:FluentIcon Icon="ChevronDown" IconSize="Size16" FontSize="16"/>
+        <!--<ic:FluentIcon Icon="ChevronDown" IconSize="Size16" FontSize="16"/>-->
         <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedOption}"/>
     </StackPanel>
         

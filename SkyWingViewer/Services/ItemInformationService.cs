@@ -7,6 +7,7 @@ using System.Drawing.Text;
 using System.Linq;
 using System.Text;
 using SkyWingViewer.Models;
+using SkyWingViewer.ViewModels;
 
 namespace SkyWingViewer.Services;
 
@@ -58,6 +59,27 @@ public partial class ItemInformationService : ObservableObject
             OnInformationItemChanged();
             return;
         }
+
+        //ここからは対象が複数の場合の処理
+
+        long FileSizeSum = 0;
+
+        foreach(var item in value)
+        {
+            if(item is FileSystemItemViewModelBase vm)
+            {
+                FileSizeSum += vm.Model.Metadata.Length ?? 0;
+            }
+        }
+
+
+        InformationItem.Clear();
+        InformationItem.Add(new ItemInformation("合計ファイルサイズ", ConvertLongValueToFileSize(FileSizeSum)));
+
+        //変更通知して表示
+        OnInformationItemChanged();
+        return;
+
     }
 
     public static List<ItemInformation> ConvertItemMetadataToItemInformations(ItemMetadata itemMetadata)
