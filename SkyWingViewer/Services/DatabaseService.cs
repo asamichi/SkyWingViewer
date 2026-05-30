@@ -146,6 +146,7 @@ public class DatabaseService
 
     public async Task BulkSetRateAsync(IEnumerable<FileSystemItemBase> items,int rate)
     {
+        //一旦 AssetEntity を作ってレートをセットする
         List<AssetEntity> assets = new();
         AssetEntity asset;
         foreach (var item in items)
@@ -163,6 +164,8 @@ public class DatabaseService
             {
                 //トラッカーをオフにすると速度面で改良できる場合がある
                 context.ChangeTracker.AutoDetectChangesEnabled = false;
+
+                //登録済みの物はレートのみ更新する
                 await context.BulkInsertOrUpdateAsync(assets, new BulkConfig
                 {
                     //重複確認のキー
@@ -171,6 +174,46 @@ public class DatabaseService
                     PropertiesToIncludeOnUpdate = new List<string> 
                     {
                         nameof(AssetEntity.Rating)
+                    },
+                });
+            }
+            finally
+            {
+                context.ChangeTracker.AutoDetectChangesEnabled = true;
+            }
+        }
+    }
+
+    public async Task SetMemoAsync(IEnumerable<FileSystemItemBase> items,string memo)
+    {
+
+        List<AssetEntity> assets = new();
+        AssetEntity asset;
+        foreach(var item in items)
+        {
+            asset = CreateAssetEntity(item);
+            asset.Memo = memo;
+            assets.Add(asset);
+        }
+
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            MyDbContext context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+
+            try
+            {
+                //トラッカーをオフにすると速度面で改良できる場合がある
+                context.ChangeTracker.AutoDetectChangesEnabled = false;
+
+                //登録済みの物はレートのみ更新する
+                await context.BulkInsertOrUpdateAsync(assets, new BulkConfig
+                {
+                    //重複確認のキー
+                    UpdateByProperties = new List<string> { nameof(AssetEntity.Path) },
+
+                    PropertiesToIncludeOnUpdate = new List<string>
+                    {
+                        nameof(AssetEntity.Memo)
                     },
                 });
             }
@@ -639,6 +682,23 @@ public class DatabaseService
                     asset.Metadata.Tags = Data.Tags;
                 }
             }
+        }
+    }
+
+    public async Task<string?> GetMemoAsync(FileSystemItemBase asset)
+    {
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            MyDbContext context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+
+            AssetEntity? assetEntity = context.Assets.FirstOrDefault(a => a.Path == asset.Path);
+
+            if(assetEntity == null)
+            {
+                return null;
+            }
+
+            return assetEntity.Memo;
         }
     }
 

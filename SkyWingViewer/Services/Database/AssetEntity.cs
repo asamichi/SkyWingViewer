@@ -46,7 +46,9 @@ public class AssetEntity
     public DateTimeOffset? CapturedTime { get; set; } = null;
     [Required] public DateTimeOffset AddedTime { get; set; }
 
-    //TODO: メモはここに置くべきではない。ユーザーのいじるデータなので。
+    //WILL: DB に対してメモの内容でがっつり検索したい場合や、過去バージョンを残す等したい場合には別テーブルへの切り分けを検討。
+    //現状１対１かつシンプルな機能での実装なのでこのままで。検索したいような情報はタグを利用する想定
+
     public string? Memo { get; set; } = null;
     //画像以外にもこの概念は動画なりにもあるので、このテーブルで良いと判断
     public int? Width { get; set; }

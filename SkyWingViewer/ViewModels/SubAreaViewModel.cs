@@ -12,10 +12,13 @@ public class SubAreaViewModel
     public AssetInformationViewModel AssetInformationViewModel { get; set; }
     public InformationTagViewModel InformationTagViewModel { get; set; }
 
+    public MemoViewModel MemoViewModel { get; set; }
+
     public SubAreaViewModel(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
         AssetInformationViewModel = _serviceProvider.GetRequiredService<AssetInformationViewModel>();
         InformationTagViewModel = _serviceProvider.GetRequiredService<InformationTagViewModel>();
+        MemoViewModel = _serviceProvider.GetRequiredService<MemoViewModel>();
     }
 }

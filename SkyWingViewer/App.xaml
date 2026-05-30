@@ -85,7 +85,11 @@
             <DataTemplate DataType="{x:Type vm:InformationTagViewModel}">
                 <views:InformationTagView/>
             </DataTemplate>
-            
+
+            <DataTemplate DataType="{x:Type vm:MemoViewModel}">
+                <views:MemoView/>
+            </DataTemplate>
+
             <!--表示箇所でふるまいを変えたくなりそうなので都度 VM は指定する-->
             <!--<DataTemplate DataType="{x:Type vm:StarRatingViewModel}">
                 <views:StarRatingView/>

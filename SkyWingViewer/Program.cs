@@ -20,7 +20,7 @@ using System.Windows;
 using System.Windows.Threading;
 using static Microsoft.WindowsAPICodePack.Shell.PropertySystem.SystemProperties.System;
 
-
+//TODO: タグ・レートともに、複数を対象に編集するときに確認するようにしても良さそう。要件等
 
 namespace SkyWingViewer;
 
@@ -91,7 +91,7 @@ class Program
         builder.Services.AddTransient<TargetDirectory>(sp =>
         {
             //return new TargetDirectory("E:\\テスト用");
-            return new TargetDirectory("E:\\テスト用");
+            return new TargetDirectory(AppContext.BaseDirectory);
         });
 
         //json ストレージ
@@ -151,6 +151,9 @@ class Program
         //星
         builder.Services.AddSingleton<StarRatingService>();
 
+        //メモ
+        builder.Services.AddSingleton<MemoService>();
+
         /* ********** vm 登録 ********* */
         //画面というか領域
         //ヘッダー
@@ -180,6 +183,7 @@ class Program
         builder.Services.AddTransient<AssetInformationViewModel>();
         builder.Services.AddTransient<InformationTagViewModel>();
         builder.Services.AddTransient<StarRatingViewModel>();
+        builder.Services.AddTransient<MemoViewModel>();
 
         //Popup
         builder.Services.AddTransient<TagEditViewModel>();
