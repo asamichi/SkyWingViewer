@@ -11,6 +11,10 @@ using Microsoft.WindowsAPICodePack.Shell;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Diagnostics;
+using CommunityToolkit.Mvvm.Input;
+using System.Collections.ObjectModel;
+using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SkyWingViewer.ViewModels;
 
@@ -34,14 +38,39 @@ public partial class ImageAssetViewModel : AssetViewModelBase<ImageAsset>
     public CancellationToken _cancellationToken;
     public CancellationTokenSource _childCancellationTokenSource;
 
+    public IWindowService _windowService;
+    public AssetListService _assetListService;
 
-    public ImageAssetViewModel(ImageAsset imageAsset,ThumbnailService ts,ILogger<ImageAssetViewModel> logger,CancellationToken ct) : base(imageAsset)
+    private IServiceProvider _serviceProvider;
+
+    public ImageAssetViewModel(ImageAsset imageAsset,ThumbnailService ts,ILogger<ImageAssetViewModel> logger,CancellationToken ct,IWindowService windowService,AssetListService assetListService, IServiceProvider serviceProvider) : base(imageAsset)
     {
+        _serviceProvider = serviceProvider;
         thumbnailService = ts;
         _logger = logger;
         _cancellationToken = ct;
+
+        _windowService = windowService;
+        _assetListService = assetListService;
+
+        ContextMenuItems.Add(new ContextMenuItem("内蔵画像ビューワで表示", OpenImageViewerCommand));
     }
 
+    [RelayCommand]
+    public void OpenImageViewer()
+    {
+        //ImageViewerMainViewModel viewerVM = new ImageViewerMainViewModel(_assetListService._assetModels,Model);
+        ImageViewerMainViewModel viewerVM = ActivatorUtilities.CreateInstance<ImageViewerMainViewModel>(_serviceProvider, _assetListService._assetModels, Model);
+
+        WindowServiceOptions options = new();
+        //TODO: 前回ビューワ利用時の、最終サイズを保持してそれを維持するように。
+        options.SizeToContent = SizeToContent.Manual;
+        options.Width = 800;
+        options.Height = 600;
+
+
+        _windowService.CreateWindow(viewerVM,options);
+    }
 
 
     public async Task LoadThumbnail()

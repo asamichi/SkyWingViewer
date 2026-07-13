@@ -57,7 +57,7 @@ public partial class TagEditViewModel : ObservableObject, IPopupControl
             List<ItemTagModel> tagList = await _itemTagService.GetAllTagsAsync();
             List<string> list = tagList.Select(t => t.TagName).ToList();
 
-            //TODO: 全アセット共通のタグは、既にタグインフォメーションの方が必要としている。その結果を参照するか共通のサービスから情報を得るようにすると、ここでのDBアクセスが1回省略できる。タグ一覧のレスポンスも良くなって DX も向上する。
+            //TODO: 全アセット共通のタグは、既にタグインフォメーションの方が必要としている。その結果を参照するか共通のサービスから情報を得るようにすると、ここでのDBアクセスが1回省略できる。タグ一覧のレスポンスも良くなって UX も向上する。
             HashSet<string> IntersectTags = await _itemTagService.GetIntersectTagsFromAssetListAsync(_assetSelectionService.TargetItems);
 
             foreach (string tag in list)

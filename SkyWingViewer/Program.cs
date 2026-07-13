@@ -154,6 +154,17 @@ class Program
         //メモ
         builder.Services.AddSingleton<MemoService>();
 
+        //ライブラリ
+        builder.Services.AddSingleton<LibraryService>();
+
+        //ダイアログ
+        builder.Services.AddSingleton<DialogService>();
+        builder.Services.AddTransient<IDialogService>(sp => sp.GetRequiredService<DialogService>());
+
+        //ウィンドウ生成
+        builder.Services.AddSingleton<WindowService>();
+        builder.Services.AddTransient<IWindowService>(sp => sp.GetRequiredService<WindowService>());
+
         /* ********** vm 登録 ********* */
         //画面というか領域
         //ヘッダー
@@ -168,6 +179,7 @@ class Program
         //左
         builder.Services.AddTransient<SideMenuAreaViewModel>();
         builder.Services.AddTransient<FavoriteListViewModel>();
+        builder.Services.AddTransient<LibraryListViewModel>();
 
         //メイン
         builder.Services.AddTransient<AssetListViewModel>();
@@ -228,8 +240,14 @@ class Program
             //状況を確認し、C# 側と DB 側で差異があればカラムの追加などを実施する
             dbContext.Database.Migrate();
 
+            //テーブルが存在しない場合、定義通りに作成しておく
+            dbContext.Database.EnsureCreated();
+
             //WAL モードで起動する
             //dbContext.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+
+            DatabaseService dbService = scope.ServiceProvider.GetRequiredService<DatabaseService>();
+            dbService.Init();
         }
 
         app.Run(mainWindow); // アプリ起動中はこの行で止まる

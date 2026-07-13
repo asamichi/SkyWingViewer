@@ -15,6 +15,8 @@ using System.Windows.Data;
 
 namespace SkyWingViewer.Services;
 
+//TODO: 絞込とソートも、こっちでコレクション作ってやってしまうように変更したほうが良いか検討。
+//内蔵ビューワからもそちらを参照するのみで済むのでシンプルになるはず
 public class AssetListService
 {
     public event Action? TargetPathChanged;
@@ -102,7 +104,7 @@ public class AssetListService
         ItemsChanged?.Invoke();
     }
 
-
+    //TODO: ライブラリ移動->移動後フォルダでレート検索->移動後フォルダにライブラリルート修正->そのままレート検索、で検索に引っかからないのを修正（既にライブラリルート修正前の状態でレートを読み込んでおり、ライブラリ移動を忘れているので DB に登録は無く、アセットのレート全てが無かったことに）
     //TODO: テストの範囲だとバグらないけど、うまいことやればバグらせられそうな実装。アセット読み込み時に DB からロードしてしまって良さそう。
     private void OnSearchStarRateChanged()
     {

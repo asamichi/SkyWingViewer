@@ -11,15 +11,15 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="100"/>
-            <RowDefinition Height="5"/>
+            <RowDefinition Height="20"/> <!--splitter-->
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <ContentControl Content="{Binding InformationTagViewModel}" Grid.Row="0"/>
         <Border Height="1" Background="#404040" SnapsToDevicePixels="True" Margin="0,5" Grid.Row="1" />
         <ContentControl Content="{Binding MemoViewModel}" Grid.Row="2"/>
-        <GridSplitter  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="3" Cursor="SizeNS"/>
-        <Border Height="1" Background="#404040" SnapsToDevicePixels="True" Margin="0,5" Grid.Row="4" />
+        <GridSplitter  HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="5" Grid.Row="3" Cursor="SizeNS"/>
+        <!--<Border Height="1" Background="#404040" SnapsToDevicePixels="True" VerticalAlignment="Center" Margin="0,5" Grid.Row="4" />-->
         <ContentControl Content="{Binding AssetInformationViewModel}" Grid.Row="5"/>
 
     </Grid>

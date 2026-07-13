@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
+using Serilog.Core;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Media.Imaging;
-using Microsoft.Data.Sqlite;
 
 namespace SkyWingViewer.Services;
 
@@ -13,6 +15,13 @@ public class ClipStudioThumbnailLoader : IThumbnailProvider
     {
         ".clip"
     };
+
+    private ILogger _logger;
+
+    public ClipStudioThumbnailLoader(ILogger<ClipStudioThumbnailLoader> logger)
+    {
+        _logger = logger;
+    }
 
     /// <summary>
     /// .clipファイル内の全テーブルをスキャンし、最初に見つかった画像バイナリをFreezeして返します。
@@ -96,7 +105,8 @@ public class ClipStudioThumbnailLoader : IThumbnailProvider
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"ClipStudio Loader Error: {ex.Message}");
+            //System.Diagnostics.Debug.WriteLine($"ClipStudio Loader Error: {ex.Message}");
+            _logger.LogWarning("ClipStudio Loader Error: {ex}", ex.Message);
         }
         finally
         {

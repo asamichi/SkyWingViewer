@@ -60,7 +60,7 @@ public partial class TagLabelViewModel :ObservableObject,IContextMenu
         {
             MessageBox.Show("削除操作をキャンセルしました。");
         }
-        //
+        
     }
 
 

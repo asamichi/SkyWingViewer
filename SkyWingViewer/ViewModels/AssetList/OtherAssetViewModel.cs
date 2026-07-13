@@ -29,50 +29,94 @@ public partial class OtherAssetViewModel : AssetViewModelBase<OtherAsset>
     {
         _logger = logger;
         _cancellationToken = ct;
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                //await GetIconAsync(otherAsset.AssetPath);
-                await LoadThumbnail();
-            }
-            catch(Exception ex)
-            {
-                _logger.LogError("OtherAssetViewModel コンストラクタの中で例外が発生しました。{ex}", ex);
-            }
+        //_ = Task.Run(async () =>
+        //{
+        //    try
+        //    {
+        //        //await GetIconAsync(otherAsset.AssetPath);
+        //        await LoadThumbnail();
+        //    }
+        //    catch(Exception ex)
+        //    {
+        //        _logger.LogError("OtherAssetViewModel コンストラクタの中で例外が発生しました。{ex}", ex);
+        //    }
 
-        },_cancellationToken);
+        //},_cancellationToken);
+
+        _ = LoadThumbnail();
     }
 
 
     //TODO: 通常アイコンはこちらの方がきれい
     public async Task LoadThumbnail()
     {
-        // すでに読み込み済みなら何もしない
-        if (IconImage != null) return;
-
-        _logger.LogTrace("アイコンの取得を開始します。Path: {path}", _asset.AssetPath);
-
-        // 重い処理（Shellアクセス）を別スレッドで実行
-        IconImage = await Task<BitmapSource?>.Run(() =>
+        int retryCnt = 0;
+        try
         {
-            try
-            {
+            // すでに読み込み済みなら何もしない
+            if (IconImage != null) return;
 
-                using (var shellFile = ShellFile.FromFilePath(_asset.AssetPath))
+            _logger.LogTrace("アイコンの取得を開始します。Path: {path}", _asset.AssetPath);
+
+            while(retryCnt < 2)
+            {
+                // 重い処理（Shellアクセス）を別スレッドで実行
+                IconImage = await Task<BitmapSource?>.Run(() =>
                 {
-                    BitmapSource bitmap = shellFile.Thumbnail.BitmapSource;
-                    bitmap.Freeze();
-                    return bitmap;
+                    try
+                    {
+
+                        using (var shellFile = ShellFile.FromFilePath(_asset.AssetPath))
+                        {
+                            BitmapSource bitmap = shellFile.Thumbnail.BitmapSource;
+                            bitmap.Freeze();
+                            return bitmap;
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        //外側のキャッチに任せる
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("LoadThumbnail、Task<BitmapSource?>.Run にてエラーが発生しました : {ex} {filename}", ex,ItemPath);
+                        return null; //TODO: 失敗時はnull（XAML側でデフォルトアイコンを表示させるのが楽）
+                    }
+                }, _cancellationToken);
+
+                //起動直後のみエラー（Microsoft.WindowsAPICodePack.Shell.ShellException (0x8000000A):）が生じるので、リトライで対処。
+                //起動直後に３ファイル以内でのエラー発生傾向なので、いったんこれでも悪影響は無いと判断
+                if (IconImage == null)
+                {
+                    retryCnt++;
+                    if(retryCnt > 2)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Thread.Sleep(100);
+                    }
                 }
             }
-            catch(Exception ex)
-            {
-                _logger.LogInformation("LoadThumbnail にてエラーが発生しました : {ex}",ex);
-                return null; // 失敗時はnull（XAML側でデフォルトアイコンを表示させるのが楽）
-            }
-        });
-        return;
+
+
+            return;
+        }
+        catch (OperationCanceledException)
+        {
+            // キャンセルされた場合は想定内なので無視して良い
+            // アプリ終了時のキャンセルも想定内なので、TaskCanceledException の親クラスの TaskCanceledException を指定
+            _logger.LogTrace("サムネイルの作成はキャンセルされました");
+            return;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("LoadThumbnail、Task<BitmapSource?>.Run でキャッチできない例外が発生しました。{ex}", ex);
+            return ;
+        }
+
     }
 
 

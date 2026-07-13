@@ -1,0 +1,64 @@
+﻿<UserControl x:Class="SkyWingViewer.Views.FavoriteListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SkyWingViewer.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+
+    <!--MahApps: 真っ黒な領域が出来るの防止に、StackPanel->Grid に変更-->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+        <Button Content="お気に入りに追加" Command="{Binding AddFavoriteCommand}" Grid.Row="0"/>
+        <ListView
+            x:Name="FaboriteListView"
+            ItemsSource="{Binding FavoriteList, Mode=TwoWay}" 
+            DisplayMemberPath="Name"
+            Tag="{Binding}"
+            Grid.Row="1">
+            <ListView.ItemContainerStyle>
+                <!--MahApps: MahApps 削除時は BasedOn 以下を削除-->
+                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                    <!--item の親をたどって ListView の先祖、つまり ListView 自体を基準とする。その DataContext = FavoriteListViewModel
+                    これを Tag に保存しておく-->
+                    <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListView}}"/>
+                    <!--クリック時の操作-->
+                    <EventSetter Event="MouseLeftButtonUp" Handler="ListViewItemMouseLeftButtonUp"/>
+                    <!--右クリックの操作-->
+                    <Setter Property="ContextMenu">
+                        <Setter.Value>
+                            <!--コンテキストメニューのデータコンテキストを、コンテキストメニュー自身を基準として、右クリック操作の対象としている要素(PlacementTarget)の Tag -> item の要素の文脈の Tag に指定する
+                            ここで単に Tag とすると、独立した VisualTree であるコンテキストメニューの Tag を探しに行ってしまう-->
+                            <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                <ContextMenu.ItemsSource>
+                                    <Binding Path="ContextMenuItems"/>
+                                </ContextMenu.ItemsSource>
+                                <ContextMenu.ItemContainerStyle>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="Header" Value="{Binding Name}"/>
+                                        <Setter Property="Command" Value="{Binding Command}"/>
+                                        <!--パラメータとして渡すのは、右クリックメニュー項目の親をたどってコンテキストメニュー自体を基準として、
+                                        右クリック操作の対象としている要素のデータコンテキスト
+                                        つまりここではお気に入りリストの中の１アイテムのデータコンテキスト -> FavoriteModel-->
+                                        <Setter Property="CommandParameter" 
+                                        Value="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    </Style>
+                                </ContextMenu.ItemContainerStyle>
+                            </ContextMenu>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
+        <!--MahApps: 余った領域をバックグラウンド指定して埋める-->
+        <TextBlock Background="{DynamicResource MahApps.Brushes.ThemeBackground}"  Grid.Row="2"/>
+    </Grid>
+
+
+</UserControl>

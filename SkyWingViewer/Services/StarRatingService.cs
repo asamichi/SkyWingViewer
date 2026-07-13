@@ -50,6 +50,8 @@ public class StarRatingService
     {
         Dictionary<string, int> Rates = await _databaseService.GetRateFromParentPathAsync(assets,_targetNavigationService.Path);
 
+
+
         foreach(FileSystemItemBase item in assets)
         {
             if(Rates.TryGetValue(item.Path, out int rate))

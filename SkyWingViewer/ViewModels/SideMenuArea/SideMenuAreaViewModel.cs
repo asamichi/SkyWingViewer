@@ -12,15 +12,17 @@ public partial class SideMenuAreaViewModel : ObservableObject
 {
 
     public FavoriteListViewModel FavoriteListViewModel { get; set; }
+    public LibraryListViewModel LibraryListViewModel { get; set; }
     private IPopupService _popupService;
     private IServiceProvider _serviceProvider;
 
 
-    public SideMenuAreaViewModel(FavoriteListViewModel favoriteListViewModel,IPopupService popupService,IServiceProvider serviceProvider)
+    public SideMenuAreaViewModel(FavoriteListViewModel favoriteListViewModel,IPopupService popupService,IServiceProvider serviceProvider,LibraryListViewModel libraryListViewModel)
     {
         _serviceProvider = serviceProvider;
         _popupService = popupService;
         FavoriteListViewModel = favoriteListViewModel;
+        LibraryListViewModel = libraryListViewModel;
     }
 
 

@@ -70,8 +70,10 @@
             <DataTemplate DataType="{x:Type vm:FavoriteListViewModel}">
                 <views:FavoriteListView/>
             </DataTemplate>
-            
-            
+            <DataTemplate DataType="{x:Type vm:LibraryListViewModel}">
+                <views:LibraryListView/>
+            </DataTemplate>
+
             <!--右側-->
 
             <DataTemplate DataType="{x:Type vm:SubAreaViewModel}">
@@ -117,6 +119,10 @@
                 <views:EmptyView/>
             </DataTemplate>-->
 
+            <!--ウィンドウ-->
+            <DataTemplate DataType="{x:Type vm:ImageViewerMainViewModel}">
+                <views:ImageViewerMain/>
+            </DataTemplate>
 
             <!--右クリックメニュー用-->
             <!--参考：https://gist.github.com/pinzolo/3103668-->

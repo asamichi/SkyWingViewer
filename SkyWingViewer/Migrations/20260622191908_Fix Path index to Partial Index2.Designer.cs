@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SkyWingViewer.Services;
 
@@ -10,9 +11,11 @@ using SkyWingViewer.Services;
 namespace SkyWingViewer.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260622191908_Fix Path index to Partial Index2")]
+    partial class FixPathindextoPartialIndex2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
@@ -38,7 +41,7 @@ namespace SkyWingViewer.Migrations
                     b.Property<int?>("Height")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("LibraryId")
+                    b.Property<int?>("LibraryId")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Memo")
@@ -165,8 +168,7 @@ namespace SkyWingViewer.Migrations
                     b.HasOne("SkyWingViewer.Services.LibraryEntity", "Library")
                         .WithMany("Assets")
                         .HasForeignKey("LibraryId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Library");
                 });

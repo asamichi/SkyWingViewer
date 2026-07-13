@@ -50,6 +50,7 @@
                 <Setter Property="Margin" Value="2"/>
                 <Setter Property="Padding" Value="0"/>
                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
                 <!--ダブルクリック時の動作-->
                 <EventSetter Event="MouseDoubleClick" Handler="ListViewItemMouseDoubleClick"/>
                 <!--右クリックの操作-->

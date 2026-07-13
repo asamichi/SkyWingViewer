@@ -13,6 +13,8 @@ public class MyDbContext : DbContext
     public DbSet<TagsEntity> Tags => Set<TagsEntity>();
     public DbSet<AssetTagPairEntity> AssetTagPairs => Set<AssetTagPairEntity>();
 
+    public DbSet<LibraryEntity> Library => Set<LibraryEntity>();
+
     public MyDbContext(DbContextOptions<MyDbContext> options) : base(options)
     {
     }
@@ -26,5 +28,14 @@ public class MyDbContext : DbContext
     {
         // スキーマの設定は SQLite にはない
         //modelBuilder.HasDefaultSchema("SkyWingViewer");
+
+        //Path 関連の列について、大文字小文字区別なしにする
+        //Windows のパスでは大文字小文字は区別されない
+        modelBuilder.Entity<AssetEntity>().Property(a => a.Path).UseCollation("NOCASE");
+        modelBuilder.Entity<AssetEntity>().Property(a => a.ParentPath).UseCollation("NOCASE");
+
+        //部分インデックス
+        modelBuilder.Entity<AssetEntity>().HasIndex(a => a.Path).HasFilter("[LibraryId] IS NULL").IsUnique();
+
     }
 }
