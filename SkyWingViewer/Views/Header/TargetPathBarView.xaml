@@ -8,10 +8,49 @@
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <!--TODO: Enter キーで入力確定するようにする-->
-        <TextBox x:Name="TargetPathTextBox" Text="{Binding TargetPath, Mode=TwoWay}">
+        <TextBox x:Name="TargetPathTextBox" Text="{Binding TargetPath, Mode=TwoWay}" LostFocus="TargetPathTextBox_LostFocus">
             <TextBox.InputBindings>
                 <KeyBinding Key="Enter"></KeyBinding>
             </TextBox.InputBindings>
         </TextBox>
+
+        <Border x:Name="BreadcrumbContainer" 
+                Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                BorderThickness="1"
+                MouseLeftButtonDown="BreadcrumbContainer_MouseLeftButtonDown">
+
+            <!-- スクロールバー非表示の ScrollViewer -->
+            <ScrollViewer x:Name="BreadcrumbScrollViewer"
+                          HorizontalScrollBarVisibility="Hidden"
+                          VerticalScrollBarVisibility="Disabled"
+                          Focusable="False"
+                          ScrollChanged="BreadcrumbScrollViewer_ScrollChanged">
+
+                <!-- 右側にクリック用の余白 -->
+                <ItemsControl ItemsSource="{Binding BreadcrumbList}" Margin="0,0,30,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" IsItemsHost="True"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <!-- 各階層ボタン -->
+                                <Button Content="{Binding Name}" 
+                                        Command="{Binding DataContext.TargetPathChangeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding Path}"
+                                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
+                                        Padding="4,2"
+                                        Margin="1,0"/>
+                                <!-- 区切り文字 -->
+                                <TextBlock Text=">" VerticalAlignment="Center" Foreground="Gray" Margin="2,0"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
     </Grid>
 </UserControl>
