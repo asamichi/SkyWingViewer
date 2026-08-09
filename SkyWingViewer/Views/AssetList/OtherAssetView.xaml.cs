@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SkyWingViewer.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -19,5 +20,31 @@ namespace SkyWingViewer.Views
         {
             InitializeComponent();
         }
+
+
+        //下記は ImageAssetView のコードビハインドと同様
+
+        //データコンテキスト切り替え時、以前の VM を掃除するために保持する。
+        private OtherAssetViewModel? _lastVM;
+
+        //イベントハンドラーが void 固定なので、この async void は回避できない
+        private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (_lastVM != null)
+            {
+                _lastVM.ViewCount--;
+                if (_lastVM.ViewCount == 0)
+                    _lastVM.UnloadThumbnail();
+            }
+
+            if (e.NewValue is OtherAssetViewModel newVM)
+            {
+                _lastVM = newVM;
+                newVM.ViewCount++;
+                //await newVM.LoadThumbnail();
+                _ = newVM.LoadThumbnail();
+            }
+        }
     }
 }
+

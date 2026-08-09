@@ -118,6 +118,8 @@ class Program
         //サムネイル関係
         builder.Services.AddSingleton<ThumbnailService>();
         builder.Services.AddHostedService<ThumbnailService>(sp=> sp.GetRequiredService<ThumbnailService>());
+        builder.Services.AddSingleton<ThumbnailDiskService>();
+        builder.Services.AddHostedService<ThumbnailDiskService>(sp => sp.GetRequiredService<ThumbnailDiskService>());
 
         //サムネイル関係(拡張子追加)
         builder.Services.AddSingleton<IThumbnailProvider, ClipStudioThumbnailLoader>();

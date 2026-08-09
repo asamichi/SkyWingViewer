@@ -91,7 +91,7 @@ public partial class ImageAssetViewModel : AssetViewModelBase<ImageAsset>
             //Thumbnail = ts.getImageCache(_asset.AssetPath);
 
 
-            var _childCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationToken);
+            _childCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationToken);
 
             _logger.LogTrace("サムネイルの作成リクエストを実施します。Path: {Path}", _asset.AssetPath);
             ThumbnailRequest thumbnailRequest = new ThumbnailRequest(_asset, async (result) =>

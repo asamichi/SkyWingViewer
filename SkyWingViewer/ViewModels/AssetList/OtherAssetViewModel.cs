@@ -1,13 +1,17 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using FluentIcons.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAPICodePack.Shell;
 using SkyWingViewer.Models;
+using SkyWingViewer.Services;
 using System;
 using System.Collections.Generic;
 using System.Drawing; 
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -17,18 +21,27 @@ namespace SkyWingViewer.ViewModels;
 //TODO: とりあえず表示という形で全て暫定処理。
 public partial class OtherAssetViewModel : AssetViewModelBase<OtherAsset>
 {
-
-    [ObservableProperty]
-    private BitmapSource? iconImage;
-
     public  CancellationToken _cancellationToken;
     private ILogger<OtherAssetViewModel> _logger;
 
+    //同じファイルのサムネイル処理を複数回しないように
+    private int _isLoading = 0;
+    private int _isVisible = 0;
+    public CancellationTokenSource _childCancellationTokenSource;
+    private ThumbnailService thumbnailService;
 
-    public OtherAssetViewModel(OtherAsset otherAsset, CancellationToken ct,ILogger<OtherAssetViewModel> logger) : base(otherAsset)
+    //このインスタンスをデータコンテキストとしている View の数
+    //折り返し部分などで、自分にとっては _lastVM だが、別の View が今まさに表示しているという場合があることへの対策。 == 0 の時のみサムネイルを解放
+    public int ViewCount { get; set; } = 0;
+
+
+
+    public OtherAssetViewModel(OtherAsset otherAsset, CancellationToken ct,ILogger<OtherAssetViewModel> logger, ThumbnailService ts) : base(otherAsset)
     {
         _logger = logger;
         _cancellationToken = ct;
+        thumbnailService = ts;
+
         //_ = Task.Run(async () =>
         //{
         //    try
@@ -43,80 +56,62 @@ public partial class OtherAssetViewModel : AssetViewModelBase<OtherAsset>
 
         //},_cancellationToken);
 
-        _ = LoadThumbnail();
+        //_ = LoadThumbnail();
+        //_ = GetIconAsync(_model.Path);
     }
 
 
-    //TODO: 通常アイコンはこちらの方がきれい
+    //WILL: ImageAssetViewModel からコピペ。今後も処理共通路線で確定なら基底クラスに移植を検討
     public async Task LoadThumbnail()
     {
-        int retryCnt = 0;
         try
         {
+            _isVisible = 1;
             // すでに読み込み済みなら何もしない
-            if (IconImage != null) return;
-
-            _logger.LogTrace("アイコンの取得を開始します。Path: {path}", _asset.AssetPath);
-
-            while(retryCnt < 2)
+            if (_isLoading == 1 || Thumbnail != null)
             {
-                // 重い処理（Shellアクセス）を別スレッドで実行
-                IconImage = await Task<BitmapSource?>.Run(() =>
-                {
-                    try
-                    {
+                _logger.LogTrace("再度サムネイル作成要求がありました。。Path: {Path}", _asset.AssetPath);
 
-                        using (var shellFile = ShellFile.FromFilePath(_asset.AssetPath))
-                        {
-                            BitmapSource bitmap = shellFile.Thumbnail.BitmapSource;
-                            bitmap.Freeze();
-                            return bitmap;
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        //外側のキャッチに任せる
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError("LoadThumbnail、Task<BitmapSource?>.Run にてエラーが発生しました : {ex} {filename}", ex,ItemPath);
-                        return null; //TODO: 失敗時はnull（XAML側でデフォルトアイコンを表示させるのが楽）
-                    }
-                }, _cancellationToken);
-
-                //起動直後のみエラー（Microsoft.WindowsAPICodePack.Shell.ShellException (0x8000000A):）が生じるので、リトライで対処。
-                //起動直後に３ファイル以内でのエラー発生傾向なので、いったんこれでも悪影響は無いと判断
-                if (IconImage == null)
-                {
-                    retryCnt++;
-                    if(retryCnt > 2)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        Thread.Sleep(100);
-                    }
-                }
+                return;
             }
 
+            _isLoading = 1;
+            //Thumbnail = await Task.Run(() => ts.getImageCache(_asset.AssetPath));
+            //Thumbnail = ts.getImageCache(_asset.AssetPath);
 
-            return;
-        }
-        catch (OperationCanceledException)
-        {
-            // キャンセルされた場合は想定内なので無視して良い
-            // アプリ終了時のキャンセルも想定内なので、TaskCanceledException の親クラスの TaskCanceledException を指定
-            _logger.LogTrace("サムネイルの作成はキャンセルされました");
-            return;
+
+            _childCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationToken);
+
+            _logger.LogTrace("サムネイルの作成リクエストを実施します。Path: {Path}", _asset.AssetPath);
+            ThumbnailRequest thumbnailRequest = new ThumbnailRequest(_asset, async (result) =>
+            {
+                if (this._isVisible == 0)
+                {
+                    _logger.LogTrace("既に必要のないサムネイルのため、値を格納しません。Path: {Path}", _asset.AssetPath);
+                    return;
+                }
+                this.Thumbnail = result;
+            }, _childCancellationTokenSource.Token);
+            await thumbnailService.AddQueueAsync(thumbnailRequest);
+
+            _isLoading = 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError("LoadThumbnail、Task<BitmapSource?>.Run でキャッチできない例外が発生しました。{ex}", ex);
-            return ;
+            _logger.LogError("LoadThumbnail の中で例外が発生しました。{ex}", ex);
         }
 
+    }
+
+    public void UnloadThumbnail()
+    {
+
+        _logger.LogTrace("サムネイルを解放します。Path: {Path}", _asset.AssetPath);
+        _isVisible = 0;
+        Thumbnail = null;
+
+        _childCancellationTokenSource?.Cancel();
+        _childCancellationTokenSource?.Dispose();
     }
 
 
@@ -167,10 +162,10 @@ public partial class OtherAssetViewModel : AssetViewModelBase<OtherAsset>
             return icon;
         });
 
-        if (bitmap != null) IconImage = bitmap;
+        if (bitmap != null) Thumbnail = bitmap;
     }
 
-
+    //TODO: steam ショートカットのアイコンが表示できるように .url はこれで読むようにプラグインに移植する
     //AI: AI に作らせたのコピペ。
     public static class SteamIconResolver
     {

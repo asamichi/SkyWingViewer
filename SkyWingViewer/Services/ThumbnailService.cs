@@ -18,10 +18,10 @@ namespace SkyWingViewer.Services;
 
 //WILL: OpenCvSharp3 による縮小でサムネイル画質や速度面で改善があるか試す。https://koshian2.hatenablog.jp/entry/2017/11/23/212813
 
-//TODO: 重いディスクアクセスを管理するサービスを別途作成すること。ディスクサービス側は常にディスクIOに専念、読み終わったらたむネイルサービスに渡すことで、なるべくシーケンシャルかつディスクの性能を使い切ることを目指す
 public class ThumbnailRequest
 {
-    public ImageAsset Asset { get; init; }
+    //public ImageAsset Asset { get; init; }
+    public FileSystemItemBase Model { get; init; }
 
     //TaskCompletionSource よりも Action でコールバックさせるほうが軽い。呼び出し元で後続の処理など無いのでこちらに変更
     //public TaskCompletionSource<BitmapImage> Completion { get; init; }
@@ -29,9 +29,10 @@ public class ThumbnailRequest
 
     public CancellationToken _token;
 
-    public ThumbnailRequest(ImageAsset asset,Action<BitmapSource> onCompleted, CancellationToken token)
+    public ThumbnailRequest(FileSystemItemBase model,Action<BitmapSource> onCompleted, CancellationToken token)
     {
-        Asset = asset;
+        //Asset = asset;
+        Model = model;
         //Completion = new();
         OnCompleted = onCompleted;
         _token = token;
@@ -43,14 +44,17 @@ public class ThumbnailService : BackgroundService
     ILogger _logger;
     //キー（拡張子）は大文字小文字を区別しない
     private readonly Dictionary<string, IThumbnailProvider> _providers = new Dictionary<string, IThumbnailProvider>(StringComparer.OrdinalIgnoreCase);
-    public ThumbnailService(IEnumerable<IThumbnailProvider> providers,ILogger<ThumbnailService> logger)
+
+    private ThumbnailDiskService _diskService;
+    public ThumbnailService(IEnumerable<IThumbnailProvider> providers,ILogger<ThumbnailService> logger, ThumbnailDiskService diskService)
     {
         _logger = logger;
+        _diskService = diskService;
 
         //重複チェックしつつ、SupportedExtensions,provider の組を登録していく。重複は一旦先勝ち
         foreach (IThumbnailProvider provider in providers)
         {
-            foreach(string ext in provider.SupportedExtensions)
+            foreach (string ext in provider.SupportedExtensions)
             {
                 if (_providers.ContainsKey(ext) == false)
                 {
@@ -58,11 +62,12 @@ public class ThumbnailService : BackgroundService
                 }
             }
         }
+
     }
 
     /* ここからバックグラウンドサービスとしての処理 */
 
-    private readonly Channel<ThumbnailRequest> _channel = Channel.CreateBounded<ThumbnailRequest>(new BoundedChannelOptions(capacity: 300)
+    private readonly Channel<ThumbnailRequest> _channel = Channel.CreateBounded<ThumbnailRequest>(new BoundedChannelOptions(capacity: 100)
     {
         //FullMode = BoundedChannelFullMode.Wait,
         FullMode = BoundedChannelFullMode.DropOldest,
@@ -80,7 +85,7 @@ public class ThumbnailService : BackgroundService
         }
         catch (OperationCanceledException)
         {
-            _logger.LogTrace("操作がキャンセルされました。{FilePath}", request.Asset.AssetPath);
+            _logger.LogTrace("操作がキャンセルされました。{FilePath}", request.Model.Path);
         }
         catch (Exception ex)
         {
@@ -94,8 +99,8 @@ public class ThumbnailService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken token)
     {
         //ここでサムネイルサービスの並列数を指定
-        //TODO: 対象ディレクトリが SSD か判別して、SSD なら並列数を増やすようにするともっと良さそう。今は HDD に併せた最適化の結果 1 並列
-        using SemaphoreSlim semaphore = new SemaphoreSlim(1);
+        //読み取りは別サービスなので、並列数も別に設定される。
+        using SemaphoreSlim semaphore = new SemaphoreSlim(6);
         
         try
         {
@@ -104,7 +109,7 @@ public class ThumbnailService : BackgroundService
                 //キャンセル済みなら次に行く
                 if (request._token.IsCancellationRequested)
                 {
-                    _logger.LogTrace("ループ進入時にキャンセル済みなためスキップされました。{FilePath}", request.Asset.AssetPath);
+                    _logger.LogTrace("ループ進入時にキャンセル済みなためスキップされました。{FilePath}", request.Model.Path);
                     continue;
                 }
 
@@ -116,19 +121,19 @@ public class ThumbnailService : BackgroundService
                 catch (OperationCanceledException)
                 {
                     // キャンセルされた場合は想定内なので無視して良い
-                    _logger.LogTrace("セマフォ取得待ち中にキャンセルされました。{FilePath}", request.Asset.AssetPath);
+                    _logger.LogTrace("セマフォ取得待ち中にキャンセルされました。{FilePath}", request.Model.Path);
                     continue;
                 }
 
                 //ここで別スレッドに処理投げる。
                 //セマフォのリリースもあるので、これはリクエストのキャンセルトークンを渡さない。アプリ終了時はキャンセルで良い。
-                _ = Task.Run(() =>
+                _ = Task.Run(async () =>
                 {
                     try
                     {
-                        string path = request.Asset.AssetPath;
+                        //string path = request.Asset.AssetPath;
 
-                        BitmapSource? bitmap = getImageCache(path);
+                        BitmapSource? bitmap = await getImageCache(request);
 
                         if(bitmap == null)
                         {
@@ -183,40 +188,26 @@ public class ThumbnailService : BackgroundService
     public int ThumbnailWidth { get; private set; } = 210;
     public int ThumbnailHeight { get; private set; } = 300;
 
-    public record struct ImageSize
-    {
-        public int Width { get; private set; }
-        public int Height { get; private set; }
-        public ImageSize(int width, int height)
-        {
-            Width = width;
-            Height = height;
-        }
-    }
 
     public ImageSize CurrentThumbnailSize = new((int)(210*1.5),(int)(300* 1.5));
     //public ImageSize CurrentThumbnailSize = new((int)(2048), (int)(2048));
 
 
-    public BitmapSource? getImageCache(string path)
+    public async Task<BitmapSource?> getImageCache(ThumbnailRequest request)
     {
+        string path = request.Model.Path;
         if (File.Exists(path) == false)
         {
             //TODO: 仮。本当はエラー用の画像にするなり検討
             //imagePath = Path.Combine(AppContext.BaseDirectory, "thumbnails");
         }
 
-        //サムネイルファイルがある「はず」のパス
-        string root = Path.GetPathRoot(path) ?? "";
-        string relative = path.Substring(root.Length);
-        string driveFolder = root.Replace(":", "").TrimEnd('\\');
-
-        string thumbnailPath = Path.Combine(ThumbnailFilePath, driveFolder, relative);
+        string thumbnailPath = GetThumbnailPath(path);
 
         //サムネイルファイルが無いならサムネイルファイルを作成
         if (File.Exists(thumbnailPath) == false)
         {
-            return CreateThumbnailFile(path, thumbnailPath) ?? null;
+            return await CreateThumbnailFile(request, thumbnailPath) ?? null;
         }
         //TODO: 現状必ずディスクのサムネイルを読んでいるが、作成した場合はそれを直接返すほうがディスクIOの節約になる
         //この時点では必ずサムネイルファイルはあるので、それを読んで返す
@@ -226,7 +217,21 @@ public class ThumbnailService : BackgroundService
     }
 
 
+    public string GetThumbnailPath(string path)
+    {
+        //サムネイルファイルがある「はず」のパス
 
+        //C:\ 等
+        string root = Path.GetPathRoot(path) ?? "";
+        
+        //C:\ 以外の部分
+        string relative = path.Substring(root.Length);
+
+        //ドライブ文字からパスに使えない文字を消去
+        string driveFolder = root.Replace(":", "").TrimEnd('\\');
+
+        return Path.Combine(ThumbnailFilePath, driveFolder, relative) + ".jpg";
+    }
 
 
     //サムネイルファイルを読み込んで、メモリに載せて返す。サムネイルファイルは軽量なので、ディスク負荷も軽微な想定。
@@ -253,17 +258,37 @@ public class ThumbnailService : BackgroundService
 
     //サムネイルファイルを作成して保存する
     //TODO: 読み込み、加工、保存はそれぞれ異なるメソッドに分離、内容を切り替えられるようにすること。
-    private BitmapSource? CreateThumbnailFile(string filePath,string outputPath)
+    private async Task<BitmapSource?> CreateThumbnailFile(ThumbnailRequest request, string outputPath)
     {
+        string path = request.Model.Path;
+
         //実体コピー。処理中にサムネイルサイズの指定が変わってもこの回での整合性は保たれる
         ImageSize currentThumbnailSize = CurrentThumbnailSize;
+        if(request.Model is OtherAsset)
+        {
+            _logger.LogTrace("path:{path}", request.Model.Path);
+        }
 
         //オリジナル画像を読み込んで格納
-        BitmapSource? original = ReadImage(filePath, currentThumbnailSize);
-
+        //BitmapSource? original = ReadImage(filePath, currentThumbnailSize);
+        ThumbnailDiskRequest diskRequest = new(request.Model, request._token, currentThumbnailSize);
+        BitmapSource? original = await _diskService.AddQueueAsync(diskRequest);
         if(original == null)
         {
+            _logger.LogWarning("CreateThumbnailFile にてサムネイル元となるアセットの読み取りができませんでした。{path}", request.Model.Path);
             return null;
+        }
+
+        if(request.Model is DirectoryModel)
+        {
+            //_logger.LogTrace("ディレクトリが対象であるため、切り抜き処理を実施しません。");
+            return original;
+        }
+
+        if(request.Model is OtherAsset)
+        {
+            //_logger.LogTrace("OtherAsset が対象であるため、切り抜き処理を実施しません。");
+            return original;
         }
 
         //切り抜き
@@ -281,8 +306,6 @@ public class ThumbnailService : BackgroundService
         //https://learn.microsoft.com/ja-jp/dotnet/desktop/wpf/graphics-multimedia/how-to-encode-and-decode-a-jpeg-image
         //https://learn.microsoft.com/ja-jp/dotnet/api/system.windows.media.imaging.jpegbitmapencoder?view=windowsdesktop-10.0
 
-
-        //TODO: .png とかが対象の時、全部 .png で保存される点を修正する。 
         JpegBitmapEncoder encoder = new();
         //品質は 85 あれば視覚的には最高品質らしい
         //https://developers.google.com/speed/docs/insights/OptimizeImages?hl=ja
